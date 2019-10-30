@@ -1,0 +1,4327 @@
+/**
+ * DON'T FLAG THIS! THIS IS DRAGON KNIGHT'S ALT ACCOUNT. (and his little brother's learning account. xP)
+ * 
+ * Combat clash, definitely my best so far! ⚔
+ * 
+ * @Note: Two player is WAY more fun than one player.
+ * 
+ * @subscribe https://www.khanacademy.org/computer-programming/sub-to/5792481952694272
+ * 
+ * @gamePlayTime with two player will be 7 to 10 minutes.
+ * 
+ * @gamePlayMusic: https://youtu.be/05XBQv0dUkA
+
+started: 9/30/19
+finished:10/15/19
+
+ * @credit: Khan Gressman for finding and helping me fix various bugs and glitches
+ * 
+**/
+/* HOW TO PLAY
+if you use the two player setting, then this game is a platformer with a weapon duel, and a race to the portal. Otherwise, it is just a normal platformer.
+
+player 1(red): arrow keys to move. shift to reset. 
+
+player2 (blue): wsd to move. r to reset. 
+
+Player kills
+Jump on other player's head to kill him.
+If provided with weapon, player 1: down key to attack.
+                        player 2: s key to attack. 
+                        
+                        NOTE: you can only use your sword if you are going a certain direction.
+*/
+
+/**
+ * TO DO (WORKING ON 7)
+
+
+2) You should try to make bigger levels that are scrollable. That might be a little tricky, especially with multiplayer, but it could make the game much better. Given that there are two players, the easiest way to do this would either be (1) make the second player AI, or (2) split the screen so that player one has the upper half of the screen and player two has the bottom half. If you choose to do this, I can walk you through the basics of making a camera class (in another program) that could pretty easily handle split screen controls and scrolling. However, here will probably need to be a decent amount of change to your graphics (such as prefixing each drawing command with camera.), so it might not be right for this program at this point. However, if you just want the scrolling with AI for the second player so that you don't have to worry about split screen, that would be a lot easier. Let me know if you want to try either of theses, and I can show you how.
+
+3) Create a separate interactive level creator to make creating new levels much easier. It could println the array that was created so that you can paste the data into this program.
+
+4) Figure out a basic story line. Are these two knights fighting each other in battle? Are they on the same side but fighting to reach some treasure or rescue the princess?
+
+
+6) Fix the portal. Portals are often one-fits-all solutions for platformers, but they're not that great, even if you have a decent portal. Why are knights trying to get to a portal? If you're inside, the portals should be doors on the edge of the screen. If you're outside, they should just be passages off the screen onto the next level.
+
+
+
+9) Make the water just be light blue blocks with almost white arcs that shrink and grow up and down in the y-direction to look like waves.
+
+
+**/
+smooth();
+
+var click = false;
+var page = 'game';
+var level = 1;
+
+var blockSize = 30;
+
+var blocks = [];
+var keys = [];
+var enemies = [];
+var sprites = [];
+
+var setting = 2;
+
+var p1SpawnX;
+var p1SpawnY;
+var p2SpawnX;
+var p2SpawnY;
+
+
+var p1Kills = 0;
+var p2Kills = 0;
+var p1Wins = 0;
+var p2Wins = 0;
+
+var gamePage = 'platformer';
+
+var drawLevel;
+
+
+
+var levelName = ['','cabin in the woods', 'tree fort', 'fire alarm', 'caught in the current', 'king of the castle', 'forest fire', 'watch tower', 'cellar strife', 'arena\nbonus level!'];
+
+var levels = [
+    [],
+    /*
+    1:player1 spawn
+    2:player2 spawn
+    
+    BLOCKS
+    b: bark
+    B: brick
+    w: wood
+    l: leaf
+     s: stone
+    d: dirt
+    g: grass
+    |: bars
+    
+    PHYSIC BLOCKS
+    L: ladder
+    <: left current water
+    >: right current water
+    v: down current water
+    p: portal
+    
+    DEATH BLOCKS
+    f: fire
+    
+    
+    SPRITES
+    W: wood
+    /: bars
+    ]: bricks
+    0: leaf
+    [: bark
+    G: grass
+    D: dirt
+    S:stone
+    
+    SPRITE/ENEMY SPAWN COMBOS
+    @: enemy/wood spawn
+    #: enemy/bars spawn
+    $: enemy/bricks spawn
+    %: enemy/leaf spawn
+    ^: enemy/bark spawn
+    &: enemy/grass spawn
+    *: enemy/dirt spawn
+    (: enemy/stone spawn
+    
+    SPRITE/PLAYER SPAWN COMBOS
+    3: player 1/wood spawn
+    4: player 1/bars spawn
+    5: player 1/bricks spawn
+    6: player 1/leaf spawn
+    7: player 1/bark spawn
+    8: player 1/grass spawn
+    9: player 1/dirt spawn
+    c: player 1/stone spawn
+    
+    ~: player 2/wood spawn
+    `: player 2/bars spawn
+    =: player 2/bricks spawn
+    +: player 2/leaf spawn
+    m: player 2/bark spawn
+    M: player 2/grass spawn
+    n: player 2/dirt spawn
+    N: player 2/stone spawn
+    */
+    
+    
+    [
+      '   1         2      ',
+      '                    ',
+      'l                 ll',
+      'llllll          llll',
+      'lllll         llllll',
+      'lllll   w B]Blllllll',
+      'llll   wwwB]B  lllll',
+      'llll  wwwwB]B     bb',
+      'bbl  wwwwwB]B     bb',
+      ' b   B]]]]B]B      b',
+      ' b   B]]]]B]B      b',
+      ' b   W]]$]]]B p    b',
+      ' b   W]]]]]fB      b',
+      'gggLgBBBBBBwBgggLggg',
+      'dddLddddddddBBBBLBBB',
+      'sssLssssssssB]]]L]]B',
+      'sSSLSSSSSSSSW]]]L]]B',
+      'sSSLSSSSSSSSW]]]L]]B',
+      'sSSLSSSSSSSSW]]]L]]B',
+      'ssssssssssssBBBBBBBB',
+        
+        
+    ],    
+    [
+      'llllllllllllllllllll',
+      'lll00000e   000llllb',
+      'll000         0llllb',
+      'l[000wwwwwwwwL 00lll',
+      'b[[wwll     fL    00',
+      'b[wlll      wL      ',
+      'bLbbl       ssssss p',
+      'bLbll            sss',
+      'bLb                 ',
+      'bLb                 ',
+      'bLb                 ',
+      'bL[                 ',
+      'bL[         sfffffff',
+      'bbgsfsgggLLggwwwwwww',
+      'bdddwddddLLddddddddd',
+      'sssssssssLLsssssssss',
+      'sSSSSSDDsLLsSSSDSSSs',
+      'sDDcDSSSSLLSSSSSSNSs',
+      'sSSSSSSSDLLSSSSDSDSs',
+      'ssssssssssssssssssss',
+        
+        
+    ],    
+    
+    [
+      'w                   ',
+      'w                   ',
+      'wLwwwwwLwwwwwL      ',
+      'wL2    L    sL      ',
+      'wL f   L    sL      ',
+      'wL w   L    sL      ',
+      'wLww   L    ssssL 1 ',
+      'wL f   L    s  sL   ',
+      'wL w   L    sffsL   ',
+      'BBBB   L    swwsL   ',
+      'BBBBB  Lgggggggggggg',
+      'BBBBBB Ldddddddddddd',
+      'ssssssBLssssssssssss',
+      's      Lsp         s',
+      's      Ls          s',
+      's      LssssssssssLs',
+      's    ssss         Ls',
+      's                 Ls',
+      's                 Ls',
+      'ssssssssssssssssssss',
+        
+        
+    ],  
+    
+     [
+      '             B     L',
+      '    B              L',
+      '    B              L',
+      '    BLwwwwwwwB     L',
+      '    BLB      BLwwwww',
+      '     L   fff BL     ',
+      'vss  L  swwwsBL     ',
+      'vsssdddddddddBL     ',
+      'vssssssssssssBwwwwwL',
+      '>>>>>v       B     L',
+      '>>>>>>>>>vv  B p   L',
+      '>>>>>>>>>>vvvB     L',
+      'ssssssssvvvvvsssssss',
+      '  1     vvvvv    2  ',
+      '<<<<<<<<<vvv>>>>>>>>',
+      'ssssssssvvvvvsssssss',
+      'sssv<<<<vvvvv>>>>>vs',
+      '<<<<v<<<<<<>>>>>>v>>',
+      '<<<<<ssssssssssss>>>',
+      'ssssssssssssssssssss',
+        
+        
+    ],
+    [
+      '                    ',
+      '                    ',
+      '              l     ',
+      'll   s   s   lll    ',
+      'lll  ssLss  llbl    ',
+      'llll ssLss   bb     ',
+      'lll  s L s    b     ',
+      'bbl  | L sggggbbggLg',
+      ' b   s L sdddbbdddLd',
+      ' b   sssLsssssssssLs',
+      ' b   s  L      s  L ',
+      'bbbggs  L      |  L ',
+      'dbddds  L      s  L ',
+      'sssssssssssssLsssssL',
+      '             Lsp   L',
+      '             Ls    L',
+      '    swwwwssssLssssss',
+      '2  ss    ssssL     1',
+      '  sssvvvvssssL      ',
+      'sssssvvvvsssssssssss',
+        
+        
+    ],
+    [
+      '       lllllllllllbl',
+      '        lllll2 lllbb',
+      '         llll      b',
+      '            ll      ',
+      '    l         lll   ',
+      '   lll          l   ',
+      '     blfff          ',
+      '  fffblllll       ll',
+      '  lllfllllf    lllll',
+      '  lllllllllllLllllll',
+      'Llllfllllbll Lllllbl',
+      'LlllllblfblllLlllbbb',
+      'L  l  bbb  l L  llbb',
+      'L      bbb   L   1 b',
+      'L       bb   L     b',
+      'L      pbb   gg    b',
+      'g   ggggbbbggddg ggg',
+      'dgggdddbbbdddsddgddd',
+      'dddddsdddbbdsssdddds',
+      'ssssssssssssssssssss',
+        
+        
+    ],  
+   
+    [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '     B           B  ',
+      '     B           B  ',
+      '     BB         BB  ',
+      '     BwwwwwwwwwLwB  ',
+      '     BB        LBB  ',
+      '     |         L |  ',
+      '  ll BB        LBB  ',
+      ' llllBwLwwwwwwwwwB f',
+      '  lblBBL        BBfl',
+      '   b BBL        BBll',
+      '  pb BBL        BBlb',
+      'fgbb ssssssLssssss b',
+      'gdbbgss 2  L  1 ss b',
+      'dbbddss    L    ssbb',
+      'dddddss    L    ssdb',
+      'ssssssssssssssssssss',
+        
+        
+    ],  
+    [
+      '        wwwwwwwww  ',
+      '     s sw 1     w 2 ',
+      '     s sw       w   ',
+      '     s swwwwwww s   ',
+      '     s s        s   ',
+      '     s s        s   ',
+      '     s s            ',
+      '  gg sf             ',
+      'ggddgswsLssssssssggg',
+      'ddssdsssLdddddddddsd',
+      'dddddsddLBBBBBBBBBBB',
+      'dBBBBBBBL          B',
+      'dBpB   BL          B',
+      'dB B   BL    BBBBLBB',
+      'sB   BLBBBBBBB   LBs',
+      'dB   BL          LBd',
+      'dBBBBBL          LBd',
+      'dsdddBBBBBBBBBBBBBBd',
+      'dddssdddddddddddddds',
+      'ssssssssssssssssssss',
+        
+        
+    ],
+     [
+      '                    ',
+      '                  p ',
+      '                    ',
+      'sssssssssLLsssssssss',
+      '|        LL        |',
+      's        LL        s',
+      's      ssssss      s',
+      's                  s',
+      '|                  |',
+      's                  s',
+      's                  s',
+      's                  s',
+      '|                  |',
+      's                  s',
+      's                  s',
+      's  2            1  s',
+      '|                  |',
+      's                  s',
+      'sdddddddddddddddddds',
+      'ssssssssssssssssssss',
+        
+        
+    ],  
+    
+    [],
+    /*empty level
+   [
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+      '                    ',
+        
+        
+    ],  
+    */
+    
+    
+];    
+
+
+textFont(createFont('monospace'));
+
+
+var runObject = function(obj) {
+    for(var i = 0; i < obj.length; i ++) {
+        obj[i].run();   
+    }
+};    
+
+var drawtext = function (x, y, Size, Text) {
+    pushMatrix();
+    translate(x, y);
+    scale(Size * 0.3);
+    stroke(0, 0, 0);
+    strokeWeight(10);
+    noFill();
+    switch (Text.toUpperCase()) {
+        case "A" : 
+            arc(20, 30, 40, 60, 180, 360);
+            line(0, 30, 0, 60);
+            line(40, 30, 40, 60);
+            line(0, 30, 50, 30);
+            ellipse(20, 30, 15, 15);
+        break;
+        case 'B':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            line(0, 0, 5, 0);
+            line(0, 60, 5, 60);
+            arc(5, 13, 70, 30, -90, 90);
+            arc(5, 45, 70, 30, -90, 90);
+        break;    
+        case 'C':
+            arc(25, 30, 50, 60, 45, 325);
+            ellipse(25, 30, 10, 10);
+        break;    
+       case 'D':
+           line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            arc(5, 30, 70, 60, -95, 95);
+         break; 
+         case 'E':
+             line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            line  (5, 30, 30, 30);
+            line(0, 0, 40, 0);
+            line(0, 60, 40, 60);
+            
+            break; 
+        case 'F':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            line(5, 30, 30, 30);
+            line(0, 0, 40, 0);
+        break;      
+        case 'G':
+            arc(25, 30, 50, 60, 25, 325);
+            ellipse(30, 40, 10, 10);
+            line(30, 40, 50, 40);
+            
+        break;    
+        case 'H':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            line(40, 0, 35, 30);
+            line(35, 30, 40, 60);
+            ellipse(35, 30, 10, 10);
+            line(5, 30, 35, 30);
+        break;    
+        case 'I':
+            line(20, 10, 20, 50);
+            ellipse(20, 10, 10, 10);
+            ellipse(20, 50, 10, 10);
+            line(10, 0, 20, 5);
+            line(30, 0, 20, 5);
+            line(10, 60, 20, 55);
+            line(30, 60, 20, 55);
+        break;    
+        case 'J':
+            line(0, 0, 40, 0);
+            ellipse(35, 5, 10, 10);
+            line(35, 10, 40, 30);
+            arc(20, 30, 40, 60, 0, 180);
+            ellipse(20, 30, 10, 10);
+            
+        break;    
+        case 'K':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            line(5, 30, 20, 25);
+            line(5, 30, 20, 35);
+            line(20, 25, 40, 0);
+            line(20, 25, 40, 60);
+            
+            break;
+        case 'L':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            line(0, 60, 40, 60);
+        break;    
+        case 'M':
+            
+            arc(10, 30, 20, 60, 180, 360);
+            arc(30, 30, 20, 60, 180, 360);
+            line(0, 30, 0, 60);
+            line(40, 30, 40, 60);
+            ellipse(20, 30, 10, 10);
+        break;    
+        
+        case 'N':
+            arc(20, 30, 40, 60, 180, 360);
+            line(0, 0, 0, 60);
+            line(40, 30, 40, 60);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case 'O':
+            ellipse(20, 30, 40, 60);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case 'P':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            arc(2, 15, 80, 30, 260, 440);
+        break;    
+        case 'Q':
+            ellipse(20, 30, 40, 60);
+            ellipse(20, 30, 10, 10);
+            line(30, 50, 40, 60);
+        break;     
+        case 'R':
+            line(0, 0, 5, 30);
+            line(5, 30, 0, 60);
+            ellipse(5, 30, 10, 10);
+            arc(2, 15, 80, 30, 260, 440);
+            line(5, 30, 40, 60);
+        break;    
+        case 'S':
+            arc(20, 15, 60, 30, 100, 280);
+            arc(10, 45, 50, 30, 260, 500);
+            ellipse(15, 30, 10, 10);
+        break;    
+        case 'T':
+            line(0, 0, 40, 0);
+            ellipse(20, 5, 10, 10);
+            line(20, 0, 20, 60);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case 'U':
+            arc(20, 30, 40, 60, 0, 180);
+            line(0, 0, 0, 30);
+            line(40, 0, 40, 30);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case 'V':
+            line(0, 0, 20, 60);
+            line(40, 0, 20, 60);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case 'W':
+            line(0, 0, 10, 60);
+            line(10, 60, 20, 30);
+            line(20, 30, 30, 60);
+            line(30, 60, 40, 0);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case 'X':
+            line(0, 0, 40, 60);
+            line(40, 0, 0, 60);
+            ellipse(20, 30, 20, 20);
+        break;    
+        case 'Y':
+            line(0, 0, 20, 30);
+            line(20, 30, 40, 0);
+            line(20, 30, 20, 60);
+            ellipse(20, 30, 10, 10);
+        break;
+        case 'Z':
+            line(0, 0, 40, 0);
+            line(0, 60, 40, 60);
+            line(0, 60, 40, 0);
+            ellipse(20, 30, 10, 10);
+        break;    
+        case '!':
+            line(20, 30, 20, 0);
+            ellipse(20, 55, 10, 10);
+        break;    
+        case '.':
+            ellipse(20, 55, 10, 10);
+        break;    
+        case ',':
+            line(30, 50, 20, 60);
+        break;    
+        
+    }
+    popMatrix();
+};
+
+var Text = function (x, y, Size, TXT) {
+    var Txt = TXT.split("");
+    for (var i = 0; i < TXT.length; i++) {
+        drawtext(x + i * 20 * Size, y, Size, TXT[i]);
+    }
+};
+
+
+
+
+var button = function(x, y, w, h, txt, pageTo) {
+    if(mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+ h) {
+        if(click) {
+            page = pageTo;   
+        }    
+        fill(140, 0, 0);
+        stroke(102, 102, 102);
+    }    else {
+        stroke(140, 0, 0);
+        fill(102, 102, 102);
+    }    
+    strokeWeight(2);
+    rect(x, y, w, h, (w+h)/5);
+    
+    fill(0);
+    
+    Text( x+w/8, y+h/8, w/100,txt);
+    
+};    
+
+var printlnButton = function(x, y, w, h, txt, printLn) {
+    if(mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+ h) {
+        if(click) {
+            println(printLn);  
+        }    
+        fill(102, 102, 102);
+        stroke(140, 0, 0);
+    }    else {
+        stroke(102, 102, 102);
+        fill(140, 0, 0);
+    }    
+    strokeWeight(2);
+    rect(x, y, w, h, (w+h)/5);
+    
+    fill(0);
+    
+    Text( x+w/8, y+h/8, (w+h)/2.5/100,txt);
+    
+};   
+
+
+var checkIn = function(x, y, w, h, X, Y, W, H) {
+    if(x + w > X && x < X + W && y + h > Y && y < Y + H) {
+        
+        return true;  
+    }
+
+};    
+
+ 
+
+var Player1 = function(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    
+   this.w = w;
+   this.h = h;
+    this.grav = 0;
+   this.vel = 0;
+    this.onGround = false;
+    
+    this.direction = 'none';
+    this.health = 100;
+};    
+
+Player1.prototype.draw = function() {
+  
+    
+            
+      
+  
+    if(this.direction === 'left') {
+            noStroke();
+            //farther arm
+            noFill();
+            stroke(120,0, 0);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            if(!keys[DOWN]) {
+            rotate(-cos(frameCount*15)*this.vel*this.w/4);
+            } else if(keys[DOWN]) { 
+                    rotate(-cos(frameCount*18)*this.vel*this.w/4);
+            }    
+            strokeWeight(this.w / 6);
+            line(0, 0, 0, this.h/2.6); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/10, this.w/3, this.w/6, this.h/10);
+            arc(0, this.h/2.8, this.w/6, this.h/6, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             
+             //sword
+             if( keys[DOWN]) {
+                 
+                noStroke();
+                fill(133, 133, 133);
+                rect(-this.w, this.h/3, this.w/1.2, this.h/20, this.w);
+                triangle(-this.w, this.h/3, -this.w, this.h/3 + this.h/20, -this.w - this.w/5, this.h/3 + this.h/40);
+                
+                fill(0);
+                rect(-this.w + this.w/1.2, this.h/3 - this.h/20, this.w/10, this.h/6);
+             } 
+            popMatrix();    
+            noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.6, this.y + this.h/2-this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/6);        
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+            translate(this.x + this.w -this.w/3, this.y + this.h/2-this.h/10);
+            rotate(-cos(frameCount*15)*this.vel*this.w/6 );                   
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            noStroke();
+            //}
+            
+            
+            //torso
+            fill(140, 140, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //closer arm
+            noFill();
+            stroke(120,0, 0);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/4);
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix();    
+            noStroke();
+            
+            
+            //closer shoulder
+            fill(196, 196, 0);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2, this.h/8);
+            
+             
+            
+            //farther shoulder
+            fill(196, 196, 0);
+            ellipse(this.x+this.w/10, this.y+this.h/10, this.w/2.5, this.h/10);
+            
+            //head
+            noStroke();
+            fill(199, 189, 0);
+            ellipse(this.x + this.w/2 - this.w/20, this.y- this.h/20, this.w/3, this.h/6);
+   
+            fill(140, 140, 0);
+            arc(this.x + this.w/2- this.w/20, this.y - this.h/12, this.w/2, this.h/2.5, 180, 360); 
+           
+            rect(this.x+this.w/2, this.y-this.h/12, this.w/5.5, this.h/10);
+            rect(this.x + this.w/2- this.w/20 - this.w/5, this.y-this.h/25, this.w/2.5, this.h/10);
+            fill(0, 0, 0);
+            ellipse(this.x+this.w/2 - this.w/10, this.y - this.h / 17, this.w/20, this.h/40);
+      } else if(this.direction === 'right') {
+            noStroke();
+            //farther arm
+            noFill();
+            stroke(120,0, 0);
+            pushMatrix();
+            translate(this.x+ this.w - this.w/8, this.y+this.h/10);
+            if(!keys[DOWN]) {
+            rotate(-cos(frameCount*15)*this.vel*this.w/4);
+            } else if(keys[DOWN]) { 
+                    rotate(-cos(frameCount*18)*this.vel*this.w/4);
+            } 
+            strokeWeight(this.w / 6);
+            line(0, 0, 0, this.h/2.6); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/10, this.w/3, this.w/6, this.h/10);
+            arc(0, this.h/2.8, this.w/6, this.h/6, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             //sword
+             if(keys[DOWN]) {
+                 
+                noStroke();
+                fill(133, 133, 133);
+                rect(this.w - this.w/1.2, this.h/3, this.w/1.2, this.h/20, this.w);
+                triangle(this.w, this.h/3, this.w, this.h/3 + this.h/20, this.w + this.w/5, this.h/3 + this.h/40);
+                
+                fill(0);
+                rect(this.w- this.w/1.2, this.h/3 - this.h/20, this.w/10, this.h/6);
+             } 
+            popMatrix();    
+            noStroke();
+            
+            //legs{
+            
+            
+            
+           
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+            translate(this.x + this.w -this.w/3, this.y + this.h/2-this.h/10);
+            rotate(-cos(frameCount*15)*this.vel*this.w/6 );        
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            
+             strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.6, this.y + this.h/2-this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/6);        
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            noStroke();
+            //}
+            
+            
+            //torso
+            fill(140, 140, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //closer arm
+            noFill();
+            stroke(120,0, 0);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/4);
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix();    
+            noStroke();
+            
+            
+            //farther shoulder
+            fill(196, 196, 0);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/10);
+            
+             
+            
+            //closer shoulder
+            fill(196, 196, 0);
+            ellipse(this.x+this.w/8, this.y+this.h/10, this.w/2, this.h/8);
+            
+            //head
+            noStroke();
+            fill(199, 189, 0);
+            ellipse(this.x + this.w/2 + this.w/20, this.y- this.h/20, this.w/3, this.h/6);
+            
+            fill(140, 140, 0);
+            arc(this.x + this.w/2+ this.w/20, this.y - this.h/12, this.w/2, this.h/2.5, 180, 360); 
+           
+            rect(this.x+this.w/2-this.w/5.5, this.y-this.h/12, this.w/5.5, this.h/10);
+            rect(this.x + this.w/2 - this.w/7, this.y-this.h/25, this.w/2.5, this.h/10);
+            
+            noStroke();
+            fill(0);
+          ellipse(this.x+this.w/2 + this.w/10, this.y - this.h / 17, this.w/20, this.h/40);
+          
+          
+      } else if(this.direction === 'none') {
+            noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+           pushMatrix();
+    
+            translate(this.x + this.w - this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+            //}
+            
+            
+            //torso
+            fill(140, 140, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //arms
+            noFill();
+            stroke(120,0, 0);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix(); 
+            
+            stroke(120, 0, 0);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             popMatrix();
+            noStroke();
+            
+            
+            //shoulders
+            fill(196, 196, 0);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+            ellipse(this.x + this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+             
+            
+            
+            
+            //head
+            noStroke();
+            fill(199, 189, 0);
+            ellipse(this.x + this.w/2, this.y- this.h/20, this.w/3, this.h/6);
+            
+            fill(140, 140, 0);
+            arc(this.x + this.w/2, this.y - this.h/12, this.w/2.3, this.h/2.5, 180, 360); 
+           
+            noFill();
+            stroke(140, 140, 0);
+            strokeWeight(this.w/13);
+            rect(this.x + this.w/2- this.w/6, this.y-this.h/12, this.w/2.8, this.h/13);
+            noStroke();
+            fill(140, 140, 0);
+            rect(this.x + this.w/2 - this.w/5, this.y, this.w/2.5, this.h/17);
+            
+            fill(0);
+            ellipse(this.x+this.w/2 - this.w/20, this.y - this.h / 20, this.w/20, this.h/40);
+            ellipse(this.x+this.w/2 + this.w/20, this.y - this.h / 20, this.w/20, this.h/40);
+            
+           
+      } if (this.direction === 'ladder') {
+          noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+           pushMatrix();
+    
+            translate(this.x + this.w - this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 0);
+            line(0, 0, 0, this.h/3);
+            stroke(140, 140, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(140, 140, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(140, 140, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+            //}
+            
+            
+            //torso
+            fill(140, 140, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //arms
+            noFill();
+            stroke(120,0, 0);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix(); 
+            
+            stroke(120, 0, 0);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(140, 140, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             popMatrix();
+            noStroke();
+            
+            
+            //shoulders
+            fill(196, 196, 0);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+            ellipse(this.x + this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+             
+            
+            
+            
+            //head
+            noStroke();
+           
+            
+            fill(140, 140, 0);
+            arc(this.x + this.w/2, this.y - this.h/12, this.w/2.3, this.h/2.5, 180, 360); 
+           
+           
+            noStroke();
+            fill(140, 140, 0);
+            rect(this.x + this.w/2 - this.w/5, this.y-this.h/10, this.w/2.5, this.h/17+this.h/10);
+           
+            
+      } 
+      
+    
+    fill(166, 166, 166);
+    rect(this.x, this.y - this.h/2+this.h/10, this.w, this.h/10);
+    fill(0, 255, 0);
+    rect(this.x, this.y - this.h/2+this.h/10, this.health/this.w*7.1, this.h/10);
+    
+    if(setting === 2) {
+    fill(255, 255, 255);
+    textFont(createFont('monospace'));
+    textSize(this.w/2);
+    textAlign(LEFT, TOP);
+    text('wins: '+p1Wins, this.x-this.w/2, this.y-this.h/1.3);
+    
+    }
+    
+    
+    this.x += round(this.vel);
+    this.y += this.grav;
+    this.vel = constrain(this.vel, -5, 5);
+    
+    this.grav +=0.8;
+    
+    if(keys[RIGHT]) {
+        this.vel ++;   
+        this.direction = 'right';
+    }    
+     if(keys[LEFT]) {
+        this.vel --;
+        this.direction = 'left';
+    }
+    if(keys[UP]  && this.onGround === true ) {
+         this.grav = -10;  
+         this.onGround = false;
+    }    
+    
+    this.onGround = false;
+  
+  if(this.vel > -1 && this.vel < 1) {
+        this.direction = 'none';   
+  } 
+    
+    // Implements friction
+    if(this.vel > 0) {
+        this.vel -= 0.3;
+    } else if(this.vel < 0) {
+        this.vel += 0.3;
+    }   
+    
+    if(this.y + this.h > height) {
+        this.onGround = true;
+        this.grav=0;
+    }    
+   if(this.y<0 && this.grav <0) {
+        this.grav = 1;
+        this.y = 0;
+   }  
+   if(this.x <=0 && this.vel < 0) {
+        this.vel = 0; 
+        this.x = 0;    
+   } 
+   if(this.x +this.w>=width && this.vel > 0) {
+        this.vel = 0; 
+        this.x = width - this.w;    
+   } 
+   
+   
+   
+    
+};
+
+var Player2 = function(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    
+   this.w = w;
+   this.h = h;
+    this.grav = 0;
+   this.vel = 0;
+    this.onGround = false;
+    
+    this.direction = 'none';
+    this.health = 100;
+};    
+
+Player2.prototype.draw = function() {
+  
+    
+            
+      
+  //graphics
+    if(this.direction === 'left') {
+            noStroke();
+            //farther arm
+            noFill();
+            stroke(0, 100, 255);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            if(!keys[83]) {
+            rotate(-cos(frameCount*15)*this.vel*this.w/4);
+            } else if(keys[83]) { 
+                    rotate(-cos(frameCount*18)*this.vel*this.w/4);
+            }
+            strokeWeight(this.w / 6);
+            line(0, 0, 0, this.h/2.6); 
+            fill(150, 150, 150);
+            noStroke();
+            rect(-this.w/10, this.w/3, this.w/6, this.h/10);
+            arc(0, this.h/2.8, this.w/6, this.h/6, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             //sword
+             if( keys[83]) {
+                 
+                noStroke();
+                fill(133, 133, 133);
+                rect(-this.w, this.h/3, this.w/1.2, this.h/20, this.w);
+                triangle(-this.w, this.h/3, -this.w, this.h/3 + this.h/20, -this.w - this.w/5, this.h/3 + this.h/40);
+                
+                fill(0);
+                rect(-this.w + this.w/1.2, this.h/3 - this.h/20, this.w/10, this.h/6);
+             } 
+            popMatrix();    
+            noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.6, this.y + this.h/2-this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/6);        
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(150, 150, 150);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(150, 150, 150);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+            translate(this.x + this.w -this.w/3, this.y + this.h/2-this.h/10);
+            rotate(-cos(frameCount*15)*this.vel*this.w/6 );        
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(150, 150, 150);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(150, 150, 150);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            noStroke();
+            //}
+            
+            
+            //torso
+            fill(150, 150, 150);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //closer arm
+            noFill();
+            stroke(0,100, 255);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/4);
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(150, 150, 150);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix();    
+            noStroke();
+            
+            
+            //closer shoulder
+            fill(200, 200, 200);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2, this.h/8);
+            
+             
+            
+            //farther shoulder
+            fill(200, 200, 200);
+            ellipse(this.x+this.w/10, this.y+this.h/10, this.w/2.5, this.h/10);
+            
+            //head
+            noStroke();
+            fill(173, 156, 2);
+            ellipse(this.x + this.w/2 - this.w/20, this.y- this.h/20, this.w/3, this.h/6);
+   
+            fill(150, 150, 150);
+            arc(this.x + this.w/2- this.w/20, this.y - this.h/12, this.w/2, this.h/2.5, 180, 360); 
+           
+            rect(this.x+this.w/2, this.y-this.h/12, this.w/5.5, this.h/10);
+            rect(this.x + this.w/2- this.w/20 - this.w/5, this.y-this.h/25, this.w/2.5, this.h/10);
+            fill(0, 0, 0);
+            ellipse(this.x+this.w/2 - this.w/10, this.y - this.h / 17, this.w/20, this.h/40);
+      } else if(this.direction === 'right') {
+            noStroke();
+            //farther arm
+            noFill();
+            stroke(0,100, 255);
+            pushMatrix();
+            translate(this.x+ this.w - this.w/8, this.y+this.h/10);
+            if(!keys[83]) {
+            rotate(-cos(frameCount*15)*this.vel*this.w/4);
+            } else if(keys[DOWN]) { 
+                    rotate(-cos(frameCount*18)*this.vel*this.w/4);
+            }
+            strokeWeight(this.w / 6);
+            line(0, 0, 0, this.h/2.6); 
+            fill(150, 150, 150);
+            noStroke();
+            rect(-this.w/10, this.w/3, this.w/6, this.h/10);
+            arc(0, this.h/2.8, this.w/6, this.h/6, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             //sword
+             if(keys[83]) {
+                 
+                noStroke();
+                fill(133, 133, 133);
+                rect(this.w - this.w/1.2, this.h/3, this.w/1.2, this.h/20, this.w);
+                triangle(this.w, this.h/3, this.w, this.h/3 + this.h/20, this.w + this.w/5, this.h/3 + this.h/40);
+                
+                fill(0);
+                rect(this.w- this.w/1.2, this.h/3 - this.h/20, this.w/10, this.h/6);
+             } 
+            popMatrix();    
+            noStroke();
+            
+            //legs{
+            
+            
+            
+           
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+            translate(this.x + this.w -this.w/3, this.y + this.h/2-this.h/10);
+            rotate(-cos(frameCount*8)*this.vel*this.w/6 );        
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(148, 148, 148);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(150, 150, 150);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            
+             strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.6, this.y + this.h/2-this.h/10);
+            rotate(cos(frameCount*8)*this.vel*this.w/6);        
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(156, 156, 156);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(150, 150, 150);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            noStroke();
+            //}
+            
+            
+            //torso
+            fill(150, 150, 150);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //closer arm
+            noFill();
+            stroke(0, 100, 255);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/4);
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(148, 148, 148);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix();    
+            noStroke();
+            
+            
+            //farther shoulder
+            fill(201, 201, 201);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/10);
+            
+             
+            
+            //closer shoulder
+            fill(199, 199, 199);
+            ellipse(this.x+this.w/8, this.y+this.h/10, this.w/2, this.h/8);
+            
+            //head
+            noStroke();
+            fill(173, 156, 2);
+            ellipse(this.x + this.w/2 + this.w/20, this.y- this.h/20, this.w/3, this.h/6);
+            
+            fill(150, 150, 150);
+            arc(this.x + this.w/2+ this.w/20, this.y - this.h/12, this.w/2, this.h/2.5, 180, 360); 
+           
+            rect(this.x+this.w/2-this.w/5.5, this.y-this.h/12, this.w/5.5, this.h/10);
+            rect(this.x + this.w/2 - this.w/7, this.y-this.h/25, this.w/2.5, this.h/10);
+            
+            noStroke();
+            fill(0);
+          ellipse(this.x+this.w/2 + this.w/10, this.y - this.h / 17, this.w/20, this.h/40);
+      } else if(this.direction === 'none') {
+            noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(148, 148, 148);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(153, 153, 153);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+           pushMatrix();
+    
+            translate(this.x + this.w - this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(150, 150, 150);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(153, 153, 153);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+            //}
+            
+            
+            //torso
+            fill(150, 150, 150);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //arms
+            noFill();
+            stroke(0,100, 255);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(150, 150, 150);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix(); 
+            
+            stroke(0, 100, 255);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(153, 153, 153);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             popMatrix();
+            noStroke();
+            
+            
+            //shoulders
+            fill(200, 200, 200);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+            ellipse(this.x + this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+             
+            
+            
+            
+            //head
+            noStroke();
+            fill(173, 156, 2);
+            ellipse(this.x + this.w/2, this.y- this.h/20, this.w/3, this.h/6);
+            
+            fill(145, 145, 145);
+            arc(this.x + this.w/2, this.y - this.h/12, this.w/2.3, this.h/2.5, 180, 360); 
+           
+            noFill();
+            stroke(150, 150, 150);
+            strokeWeight(this.w/13);
+            rect(this.x + this.w/2- this.w/6, this.y-this.h/12, this.w/2.8, this.h/13);
+            noStroke();
+            fill(150, 150, 150);
+            rect(this.x + this.w/2 - this.w/5, this.y, this.w/2.5, this.h/17);
+            
+            fill(0);
+            ellipse(this.x+this.w/2 - this.w/20, this.y - this.h / 20, this.w/20, this.h/40);
+            ellipse(this.x+this.w/2 + this.w/20, this.y - this.h / 20, this.w/20, this.h/40);
+      } 
+    else if(this.direction === 'ladder') {
+        noStroke();
+           
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(148, 148, 148);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(153, 153, 153);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+           pushMatrix();
+    
+            translate(this.x + this.w - this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(0, 100, 255);
+            line(0, 0, 0, this.h/3);
+            stroke(150, 150, 150);
+            line(0, this.h/3, 0, this.h/2);
+            fill(150, 150, 150);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(153, 153, 153);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+            //}
+            
+            
+            //torso
+            fill(150, 150, 150);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //arms
+            noFill();
+            stroke(0,100, 255);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(150, 150, 150);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix(); 
+            
+            stroke(0, 100, 255);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(153, 153, 153);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             popMatrix();
+            noStroke();
+            
+            
+            //shoulders
+            fill(200, 200, 200);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+            ellipse(this.x + this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+             
+            
+            
+            
+            //head
+            noStroke();
+            
+            fill(145, 145, 145);
+            arc(this.x + this.w/2, this.y - this.h/12, this.w/2.3, this.h/2.5, 180, 360); 
+           
+            
+            fill(150, 150, 150);
+            rect(this.x + this.w/2 - this.w/5, this.y - this.h/10, this.w/2.5, this.h/17+this.h/10);
+            
+            
+    }    
+    fill(166, 166, 166);
+    rect(this.x, this.y - this.h/2+this.h/10, this.w, this.h/10);
+    fill(0, 255, 0);
+    rect(this.x, this.y - this.h/2+this.h/10, this.health/this.w*7.1, this.h/10);
+    
+    fill(255, 255, 255);
+    textFont(createFont('monospace'));
+    textSize(this.w/2);
+    textAlign(LEFT, TOP);
+    text('wins: '+p2Wins, this.x-this.w/2, this.y-this.h/1.3);
+    
+    
+    
+    this.x += round(this.vel);
+    this.y += this.grav;
+    this.vel = constrain(this.vel, -5, 5);
+    
+    this.grav +=0.8;
+    
+    if(keys[68]) {
+        this.vel ++;   
+        this.direction = 'right';
+    }    
+     if(keys[65]) {
+        this.vel --;
+        this.direction = 'left';
+    }
+    if(keys[87] && this.onGround === true) {
+         this.grav = -10;  
+         this.onGround = false;
+    }    
+  
+  if(this.vel > -1 && this.vel < 1) {
+        this.direction = 'none';   
+  } 
+    
+    // Implements friction
+    if(this.vel > 0) {
+        this.vel -= 0.3;
+    } else if(this.vel < 0) {
+        this.vel += 0.3;
+    }   
+    if(this.y + this.h > height) {
+        this.onGround = true;
+        this.grav=0;
+    }    
+   if(this.y<0 && this.grav <0) {
+        this.grav = 1;
+        this.y = 0;
+   }  
+   if(this.x <=0 && this.vel < 0) {
+        this.vel = 0; 
+        this.x = 0;    
+   } 
+   if(this.x +this.w>=width && this.vel > 0) {
+        this.vel = 0; 
+        this.x = width - this.w;    
+   } 
+        
+    
+};
+var player1 = [
+    
+    new Player1(p1SpawnX,p1SpawnY, blockSize - blockSize/10, blockSize*2-blockSize/10-blockSize/10),
+     new Player2(p2SpawnX,p2SpawnY, blockSize - blockSize/10, blockSize*2-blockSize/10-blockSize/10),
+    
+];
+
+var resetPlayer1 = function() {
+    player1[0].x = p1SpawnX;
+    player1[0].y = p1SpawnY;
+    player1[0].vel = 0;
+    player1[0].grav = 0;
+    player1[0].health = 100;
+    
+};    
+
+var resetPlayer2 = function() {
+    player1[1].x = p2SpawnX;
+    player1[1].y = p2SpawnY;
+    player1[1].vel = 0;
+    player1[1].grav = 0;
+    player1[1].health = 100;
+    
+};    
+
+var Enemy = function(sx, sy, w, h) {
+    this.sx = sx;
+    this.sy = sy;
+    this.x = this.sx;
+    this.y = this.sy;
+    
+   this.w = w;
+   this.h = h;
+    this.grav = 0;
+   this.vel = 0;
+    this.onGround = false;
+    this.inRange = false;
+    
+    this.direction = 'left';
+    this.health = 100;
+    this.onLadder = false;
+};   
+
+Enemy.freed = [];
+
+
+Enemy.prototype.draw = function() {
+  
+    
+       
+      
+  //graphics
+ 
+    if(this.direction === 'left') {
+            noStroke();
+            //farther arm
+            noFill();
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            if(!this.inRange) {
+            rotate(-cos(frameCount*15)*this.vel*this.w/4);
+            } else if(this.inRange) { 
+                    rotate(-cos(frameCount*18)*this.vel*this.w/4);
+            }
+            strokeWeight(this.w / 6);
+            line(0, 0, 0, this.h/2.6); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/10, this.w/3, this.w/6, this.h/10);
+            arc(0, this.h/2.8, this.w/6, this.h/6, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             //sword
+             if(this.inRange) {
+                 
+                noStroke();
+                fill(140, 120, 0);
+                rect(-this.w, this.h/3, this.w/1.2, this.h/20, this.w);
+                triangle(-this.w, this.h/3, -this.w, this.h/3 + this.h/20, -this.w - this.w/5, this.h/3 + this.h/40);
+                
+                fill(0);
+                rect(-this.w + this.w/1.2, this.h/3 - this.h/20, this.w/10, this.h/6);
+             } 
+            popMatrix();    
+            noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.6, this.y + this.h/2-this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/6);        
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+            translate(this.x + this.w -this.w/3, this.y + this.h/2-this.h/10);
+            rotate(-cos(frameCount*15)*this.vel*this.w/6 );        
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            noStroke();
+            //}
+            
+            
+            //torso
+            fill(0, 0, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //closer arm
+            noFill();
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/4);
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix();    
+            noStroke();
+            
+            
+            //closer shoulder
+            fill(51, 51, 51);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2, this.h/8);
+            
+             
+            
+            //farther shoulder
+            fill(48, 48, 48);
+            ellipse(this.x+this.w/10, this.y+this.h/10, this.w/2.5, this.h/10);
+            
+            //head
+            noStroke();
+            fill(173, 156, 2);
+            ellipse(this.x + this.w/2 - this.w/20, this.y- this.h/20, this.w/3, this.h/6);
+   
+            fill(0, 0, 0);
+            arc(this.x + this.w/2- this.w/20, this.y - this.h/12, this.w/2, this.h/2.5, 180, 360); 
+           
+            rect(this.x+this.w/2, this.y-this.h/12, this.w/5.5, this.h/10);
+            rect(this.x + this.w/2- this.w/20 - this.w/5, this.y-this.h/25, this.w/2.5, this.h/10);
+            fill(0, 0, 0);
+            ellipse(this.x+this.w/2 - this.w/10, this.y - this.h / 17, this.w/20, this.h/40);
+      } else if(this.direction === 'right') {
+            noStroke();
+            //farther arm
+            noFill();
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w - this.w/8, this.y+this.h/10);
+            if(!this.inRange) {
+            rotate(-cos(frameCount*15)*this.vel*this.w/4);
+            } else if(this.inRange) { 
+                    rotate(-cos(frameCount*18)*this.vel*this.w/4);
+            }
+            strokeWeight(this.w / 6);
+            line(0, 0, 0, this.h/2.6); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/10, this.w/3, this.w/6, this.h/10);
+            arc(0, this.h/2.8, this.w/6, this.h/6, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             //sword
+             if(this.inRange) {
+                 
+                noStroke();
+                fill(140, 120, 0);
+                rect(this.w - this.w/1.2, this.h/3, this.w/1.2, this.h/20, this.w);
+                triangle(this.w, this.h/3, this.w, this.h/3 + this.h/20, this.w + this.w/5, this.h/3 + this.h/40);
+                
+                fill(0);
+                rect(this.w- this.w/1.2, this.h/3 - this.h/20, this.w/10, this.h/6);
+             } 
+            popMatrix();    
+            noStroke();
+            
+            //legs{
+            
+            
+            
+           
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+            translate(this.x + this.w -this.w/3, this.y + this.h/2-this.h/10);
+            rotate(-cos(frameCount*8)*this.vel*this.w/6 );        
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            
+             strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.6, this.y + this.h/2-this.h/10);
+            rotate(cos(frameCount*8)*this.vel*this.w/6);        
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            noStroke();
+            //}
+            
+            
+            //torso
+            fill(0, 0, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //closer arm
+            noFill();
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            rotate(cos(frameCount*15)*this.vel*this.w/4);
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix();    
+            noStroke();
+            
+            
+            //farther shoulder
+            fill(50, 50, 50);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/10);
+            
+             
+            
+            //closer shoulder
+            fill(50, 50, 50);
+            ellipse(this.x+this.w/8, this.y+this.h/10, this.w/2, this.h/8);
+            
+            //head
+            noStroke();
+            fill(173, 156, 2);
+            ellipse(this.x + this.w/2 + this.w/20, this.y- this.h/20, this.w/3, this.h/6);
+            
+            fill(0, 0, 0);
+            arc(this.x + this.w/2+ this.w/20, this.y - this.h/12, this.w/2, this.h/2.5, 180, 360); 
+           
+            rect(this.x+this.w/2-this.w/5.5, this.y-this.h/12, this.w/5.5, this.h/10);
+            rect(this.x + this.w/2 - this.w/7, this.y-this.h/25, this.w/2.5, this.h/10);
+            
+            noStroke();
+            fill(0);
+          ellipse(this.x+this.w/2 + this.w/10, this.y - this.h / 17, this.w/20, this.h/40);
+      } else if(this.direction === 'none') {
+           
+            noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+           pushMatrix();
+    
+            translate(this.x + this.w - this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+            //}
+            
+            
+            //torso
+            fill(0, 0, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+            //arms
+            noFill();
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix(); 
+            
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             popMatrix();
+            noStroke();
+            
+            
+            //shoulders
+            fill(50, 50, 50);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+            ellipse(this.x + this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+             
+            
+            
+            
+            //head
+            noStroke();
+            fill(173, 156, 2);
+            ellipse(this.x + this.w/2, this.y- this.h/20, this.w/3, this.h/6);
+            
+            fill(0, 0, 0);
+            arc(this.x + this.w/2, this.y - this.h/12, this.w/2.3, this.h/2.5, 180, 360); 
+           
+            noFill();
+            stroke(0, 0, 0);
+            strokeWeight(this.w/13);
+            rect(this.x + this.w/2- this.w/6, this.y-this.h/12, this.w/2.8, this.h/13);
+            noStroke();
+            fill(0, 0, 0);
+            rect(this.x + this.w/2 - this.w/5, this.y, this.w/2.5, this.h/17);
+            
+            fill(0);
+            ellipse(this.x+this.w/2 - this.w/20, this.y - this.h / 20, this.w/20, this.h/40);
+            ellipse(this.x+this.w/2 + this.w/20, this.y - this.h / 20, this.w/20, this.h/40);
+      } 
+    else if(this.direction === 'ladder') {
+        noStroke();
+            
+            //legs{
+            
+            
+            
+            strokeWeight(this.w/4.5);
+            pushMatrix();
+    
+            translate(this.x + this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(-this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+    
+           pushMatrix();
+    
+            translate(this.x + this.w - this.w/2.7, this.y + this.h/2-this.h/10);
+                   
+            stroke(120, 0, 120);
+            line(0, 0, 0, this.h/3);
+            stroke(0, 0, 0);
+            line(0, this.h/3, 0, this.h/2);
+            fill(0, 0, 0);
+            noStroke();
+            quad(-this.w/6, this.h/3.2, -this.w/8, this.h/1.7, this.w/8, this.h/1.7, this.w/6, this.h/3.2);
+            
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            line(-this.w/15, this.h/3, -this.w/15, this.h/2.5);
+            //foot
+            noStroke();
+            fill(0, 0, 0);
+            arc(this.w/10, this.h/1.7, this.w/4, this.h/10, 180, 360);
+            popMatrix();
+            
+            strokeWeight(this.w/4.2);
+            pushMatrix();
+            //}
+            
+            
+             //arms
+            noFill();
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w-this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+            popMatrix(); 
+            
+            stroke(120, 0, 120);
+            pushMatrix();
+            translate(this.x+ this.w/8, this.y+this.h/10);
+            
+            strokeWeight(this.w / 5);
+            line(0, 0, 0, this.h/2.5); 
+            fill(0, 0, 0);
+            noStroke();
+            rect(-this.w/8, this.w/3, this.w/4, this.h/10);
+            arc(0, this.w/1.4, this.w/4, this.h/5, 0, 180);
+            stroke(180, 180, 180);
+            strokeWeight(this.w/15);
+            point(-this.w/20, this.h/5.5);
+             point(-this.w/20, this.h/2.6);
+             popMatrix();
+            noStroke();
+            
+            //torso
+            fill(0, 0, 0);
+            quad(this.x + this.w/8, this.y + this.h/10,this.x + this.w/8+ this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8- this.w/8, this.y + this.h/2, this.x + this.w - this.w / 8, this.y + this.h/10);
+            
+            //belt
+            noStroke();
+            fill(122, 102, 0);
+            rect(this.x+this.w/8+this.w/10, this.y+this.h/2-this.h/10, this.w/1.7, this.h/10);
+            
+            
+           
+            
+            
+            //shoulders
+            fill(50, 50, 50);
+            ellipse(this.x+ this.w-this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+            ellipse(this.x + this.w/8, this.y+this.h/10, this.w/2.5, this.h/8);
+             
+            
+            
+            
+            //head
+            noStroke();
+            
+            
+            fill(0, 0, 0);
+            arc(this.x + this.w/2, this.y - this.h/12, this.w/2.3, this.h/2.5, 180, 360); 
+           
+            fill(0);
+            stroke(0, 0, 0);
+            strokeWeight(this.w/13);
+            rect(this.x + this.w/2- this.w/6, this.y-this.h/12, this.w/3, this.h/13);
+            noStroke();
+            
+        
+    }    
+    
+    //health bar
+    fill(166, 166, 166);
+    rect(this.x, this.y - this.h/2+this.h/10, this.w, this.h/10);
+    fill(0, 255, 0);
+    rect(this.x, this.y - this.h/2+this.h/10, this.health/this.w*7.1, this.h/10);
+    
+     
+    
+    
+
+        
+    
+};
+
+Enemy.prototype.brain = function() {
+    //on patrol{
+    if(dist(this.x, this.y, player1[0].x, player1[0].y) >=width/3 && dist(this.x, this.y, player1[1].x, player1[1].y) >=width/3) {
+        this.sword = false;
+        
+        for(var i in blocks) {
+            if(checkIn(blocks[i].x, blocks[i].y, blocks[i].w, blocks[i].h, this.x - this.w/2, this.y, this.w+this.w/2+this.w/2, this.h)) {   
+                
+                
+                 if(this.y +this.h> blocks[i].y + blocks[i].h / 5 && this.y < blocks[i].y + blocks[i].h - blocks[i].h/5) {
+                    
+                           if(this.direction === 'left' && this.vel <=0 && this.x > blocks[i].x + blocks[i].w/2) {
+                               this.vel = 4;
+                                this.direction = 'right';   
+                                
+                           } 
+                            if(this.direction === 'right' && this.vel >=0 && this.x + this.w< blocks[i].x + blocks[i].w/2) {
+                               this.vel = -4;
+                                this.direction = 'left';   
+                                
+                           } 
+                           
+                
+                   
+                    
+                    
+                    
+                    
+            
+                
+                
+              
+                    
+                }
+            }
+        }
+    
+    } //}  
+    //on pursuit{
+    else {
+    
+    
+    //player 1 attack
+     if(dist(this.x, this.y, player1[0].x, player1[0].y) <= dist(this.x, this.y, player1[1].x, player1[1].y) && dist(this.x, this.y, player1[0].x, player1[0].y) <=width/3) {
+            
+            
+            
+               //left and right and jump
+               if(player1[0].x  <= this.x + this.w ) {
+                    this.direction = 'left';   
+               } 
+                if(player1[0].x >= this.x ) {
+                    this.direction = 'right';   
+               } 
+               if(player1[0].y + player1[0].h/2 <= this.y &&  this.onGround === true ) {
+                this.grav = -10;  
+                this.onGround = false;
+                
+                }
+                //makes the enemy jump over walls
+                if(this.y === player1[0].y && this.vel === 0) {
+                    this.grav = -10;   
+                    this.onGround = false;
+                }    
+                if(this.onGround && this.vel >=0 && player1[0].x <= this.x) {
+                     this.grav = -10;   
+                    this.onGround = false;
+                }
+                if(this.onGround && this.vel <=0 && player1[0].x >= this.x) {
+                     this.grav = -10;   
+                    this.onGround = false;
+                }
+               
+                   
+           
+     }  
+    
+     //player 2 attack
+     if(dist(this.x, this.y, player1[1].x, player1[1].y) <= dist(this.x, this.y, player1[0].x, player1[0].y)&& dist(this.x, this.y, player1[1].x, player1[1].y) <=width/3) {
+           
+               //left and right and jump
+               if(player1[1].x  <= this.x + this.w &&!this.onLadder) {
+                    this.direction = 'left';   
+               } 
+                if(player1[1].x >= this.x &&!this.onLadder) {
+                    this.direction = 'right';   
+               } 
+               if(player1[1].y + player1[1].h <= this.y &&  this.onGround === true ) {
+                this.grav = -10;  
+                this.onGround = false;
+               }
+                
+                 //makes the enemy jump over walls
+                if(this.y === player1[1].y && this.vel === 0) {
+                    this.grav = -10;   
+                    this.onGround = false;
+                }      
+                if(this.onGround && this.vel >=0 && player1[1].x <= this.x) {
+                     this.grav = -10;   
+                    this.onGround = false;
+                }
+                if(this.onGround && this.vel <=0 && player1[1].x >= this.x) {
+                     this.grav = -10;   
+                    this.onGround = false;
+                }
+               
+        
+     }  
+     
+     
+     
+     //registers whether the enmy will chase the player or not
+     if(dist(this.x, this.y, player1[0].x, player1[0].y) <= width/4) {
+               this.inRange = true;
+        }  
+        if(dist(this.x, this.y, player1[1].x, player1[1].y) <= width/4) {
+               this.inRange = true;
+        }  
+    
+    }
+     
+     //}
+    this.x += round(this.vel);
+    this.y += this.grav;
+    this.vel = constrain(this.vel, -4, 4);
+    
+    this.grav +=0.8;
+    
+    if(this.direction === 'right' && this.direction !== 'ladder') {
+        this.vel ++;   
+       
+    }    
+     if(this.direction === 'left' && this.direction !== 'ladder') {
+        this.vel --;
+        
+    }
+    if(keys[87] && this.onGround === true) {
+         this.grav = -10;  
+         this.onGround = false;
+    }    
+  
+  if(this.vel > -1 && this.vel < 1) {
+        this.direction = 'none';   
+  } 
+    
+    // Implements friction
+    if(this.vel > 0) {
+        this.vel -= 0.3;
+    } else if(this.vel < 0) {
+        this.vel += 0.3;
+    }   
+    if(this.y + this.h > height) {
+        this.onGround = true;
+        this.grav=0;
+    }    
+   if(this.y<0 && this.grav <0) {
+        this.grav = 1;
+        this.y = 0;
+   }  
+   if(this.x <=0 && this.vel < 0) {
+        this.vel = 0; 
+        this.x = 0;    
+   } 
+   if(this.x +this.w>=width && this.vel > 0) {
+        this.vel = 0; 
+        this.x = width - this.w;    
+   } 
+};
+
+Enemy.prototype.kill = function() {
+    //enemy kills player
+    if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)){
+        player1[0].health -= 2;
+        
+    } 
+    if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h)){
+        player1[1].health -= 2;
+        
+    } 
+    
+    //player kills enemy
+    if(checkIn(player1[0].x - player1[0].w, player1[0].y, player1[0].w*3, player1[0].h, this.x, this.y, this.w, this.h) && keys[DOWN] && player1[0].direction !== 'none') {
+        this.health -= 5;
+        
+    }    
+    if(checkIn(player1[1].x - player1[1].w, player1[1].y, player1[1].w*3, player1[1].h, this.x, this.y, this.w, this.h) && keys[83] && player1[1].direction !== 'none') {
+        this.health -= 5;
+        
+    }  
+    
+    if(this.health <= 0 ) {
+        this.x = this.sx;
+        this.y = this.sy;
+        this.health = 100;
+        this.vel = 0;
+        this.grav = 0;
+        
+    }    
+};    
+
+Enemy.prototype.run = function() {
+    this.draw();
+    this.brain();
+    this.kill();
+};    
+
+
+Enemy.new = function(sx, sy, w, h) {
+    var e;
+    if (Enemy.freed.length > 0) {
+        e = Enemy.freed.pop();
+        e.init(sx, sy, w, h);
+    } else {
+        e = new Enemy(sx, sy, w, h);
+    }
+    return e;
+};  
+
+var Block = function(x, y, w, h, t) {
+    this.x = x;
+    this.y = y;
+    this.h = h;
+    this.w = w;
+    this.t = t;
+    
+};    
+
+Block.images = {};
+
+Block.freed = [];
+
+
+
+Block.prototype.draw = function() {
+    if (Block.images[this.t] === undefined) {
+         if(this.t === 'normal') {
+            noStroke();
+            
+            fill(125, 125, 125);
+            rect(this.x, this.y, this.w, this.h);
+        }     else if(this.t === 'stone') {
+               noStroke();
+            fill(145, 145, 145);
+            rect(this.x, this.y, this.w, this.h);
+            fill(100, 100, 100);
+            ellipse(this.x + this.w/3, this.y + this.h/5, this.w/3, this.h/4);
+            ellipse(this.x + this.w/1.6, this.y + this.h/2.5, this.w/2, this.h/5);
+            arc(this.x, this.y + this.h/1.5, this.w/4, this.h/5, 270, 450);
+            arc(this.x+this.w, this.y + this.h/1.5, this.w/2, this.h/5, 90, 270);
+            
+            arc(this.x + this.w/1.5, this.y, this.w/3, this.h/2, 0, 180);
+                    arc(this.x + this.w/1.5, this.y+this.h, this.w/3, this.h/3, 180, 360);
+                    ellipse(this.x + this.w/2.5, this.y+this.h/1.4, this.w/1.5, this.h/5);
+            
+            
+        } else if(this.t === 'dirt') {
+            fill(122, 98, 0);
+            rect(this.x, this.y, this.w, this.h);
+             fill(100, 100, 100);
+            ellipse(this.x + this.w/3, this.y + this.h/5, this.w/3, this.h/4);
+            ellipse(this.x + this.w/1.6, this.y + this.h/2.5, this.w/2, this.h/5);
+            arc(this.x, this.y + this.h/1.5, this.w/4, this.h/5, 270, 450);
+            arc(this.x+this.w, this.y + this.h/1.5, this.w/2, this.h/5, 90, 270);
+            
+            arc(this.x + this.w/1.5, this.y, this.w/3, this.h/2, 0, 180);
+                    arc(this.x + this.w/1.5, this.y+this.h, this.w/3, this.h/3, 180, 360);
+                    ellipse(this.x + this.w/2.5, this.y+this.h/1.4, this.w/1.5, this.h/5);
+        }    
+        else if(this.t === 'grass') {
+            fill(122, 98, 0);
+            rect(this.x, this.y, this.w, this.h);
+            fill(0, 148, 47);
+            triangle(this.x, this.y, this.x, this.y + this.h/4, this.x + this.w/3, this.y);
+            triangle(this.x + this.w/10, this.y, this.x + this.w/4, this.y + this.h/3, this.x + this.w/2, this.y);
+            triangle(this.x + this.w/3, this.y, this.x + this.w/1.5, this.y, this.x + this.w / 1.8, this.y + this.h/3.5);
+            triangle(this.x + this.w, this.y, this.x + this.w, this.y + this.h/3, this.x + this.w/2, this.y);
+        }    else if(this.t === 'bark'){
+            noStroke();
+            fill(115, 88, 0);
+            rect(this.x, this.y, this.w, this.h);
+            
+             fill(99, 69, 0);
+            quad(this.x, this.y, this.x, this.y + this.h/2, this.x + this.w/10, this.y + this.h/2,this.x + this.w/4, this.y);
+            quad( this.x+this.w/10, this.y + this.h/2, this.x, this.y + this.h/2, this.x + this.w/10, this.y + this.h, this.x + this.w/3, this.y + this.h);
+            triangle(this.x + this.w/2, this.y + this.h, this.x + this.w/3, this.y + this.h/1.5, this.x + this.w/2.5, this.y );
+            quad(this.x + this.w, this.y, this.x + this.w - this.w/10, this.y, this.x + this.w/1.5, this.y + this.h, this.x + this.w - this.w/10, this.y + this.h);
+            triangle(this.x + this.w/2, this.y, this.x + this.w/1.3, this.y, this.x + this.w/1.5, this.y + this.h/1.5);
+        
+        }    else if(this.t === 'leaf') {
+            noStroke();
+             fill(0, 97, 11);
+             rect(this.x, this.y, this.w, this.h);
+            fill(33, 122, 0);
+            rect(this.x, this.y, this.w/2, this.h, this.w);
+            ellipse(this.x + this.w/2, this.y + this.h/3, this.w/3, this.h/1.5);
+            ellipse(this.x + this.w - this.w/5, this.y + this.h- this.h/4, this.w/5, this.h / 2);
+           
+        }     else if(this.t === 'brick') {
+            fill(71, 71, 71);
+            rect(this.x, this.y, this.w, this.h);
+            fill(176, 135, 0);
+            rect(this.x, this.y, this.w/2 - this.w/10, this.h/3 - this.h/10);
+            fill(89, 83, 0);
+            rect(this.x+this.w/2, this.y, this.w/2 - this.w/10, this.h/3  - this.h/10);
+            
+            fill(130, 98, 0);
+            rect(this.x, this.y + this.h/3, (this.w/2 - this.w/10)/2, this.h/3 - this.h/10);
+            rect(this.x + this.w - (this.w/2 - this.w/10)/2, this.y + this.h/3, (this.w/2 - this.w/10)/2, this.h/3 - this.h/10);
+            
+            fill(145, 131, 0);
+            rect(this.x + this.w/2 - this.w/10 - this.w/10, this.y + this.h/3, this.w/2 - this.w/10, this.h/3 - this.h/10);
+            
+      
+            fill(130, 113, 0);
+            rect(this.x, this.y+this.h- this.h/2+this.h/10+this.h/10, this.w/2 - this.w/10, this.h/3 - this.h/10);
+            fill(189, 158, 0);
+            rect(this.x+this.w/2, this.y+this.h- this.h/2+this.h/10+this.h/10, this.w/2 - this.w/10, this.h/3  - this.h/10);
+        } else if(this.t === 'wood') {
+            
+            noStroke();
+            fill(115, 88, 0);
+            rect(this.x, this.y, this.w, this.h);
+            
+             fill(99, 69, 0);
+            triangle(this.x, this.y,  this.x + this.w, this.y, this.x, this.y + this.h/4);
+            quad(this.x, this.y + this.h, this.x + this.w, this.y + this.h, this.x + this.w/1.5, this.y + this.h/1.5, this.x + this.w/2, this.y + this.h - this.h/10);
+            triangle(this.x+this.w/10, this.y + this.h/2, this.x + this.w, this.y + this.h/3, this.x + this.w/2, this.y + this.h/1.5);
+            triangle(this.x, this.y + this.h, this.x + this.w/5, this.y + this.h, this.x, this.y+this.h-this.h/3);
+            
+        }    
+        else if(this.t === 'bars') {
+            noStroke();
+            fill(107, 107, 107);
+            pushMatrix();
+            translate(this.x, this.y);
+            for(var i = 0; i < this.w; i += this.w/4) {
+                rect(i, 0, this.w/10, this.h);   
+            }    
+            popMatrix();
+            
+        }    
+        Block.images[this.t ] = get(this.x, this.y, this.w, this.h);
+        
+        }
+    else {
+        image (Block.images[this.t], this.x, this.y, this.w, this.h);
+    }
+
+};
+
+Block.prototype.collide = function(player) {
+    
+     //collisions
+    var px = player.x;
+    var py = player.y;
+    var pw = player.w;
+    var ph = player.h;
+    var pvel = player.vel;
+    var  pOnGround = player.onDround;
+    var pgrav = player.grav;
+      //player 1
+     if( py+ ph + pgrav> this.y &&py + pgrav<this.y+this.h &&px+pw +pvel> this.x &&px +pvel < this.x+this.w){
+                
+                if(px + pw> this.x + this.w/5 &&px < this.x + this.w - this.w/5) 
+                {
+                    //from the top
+                    
+                    if(pgrav > 0 && py + ph < this.y + this.h/2) {
+                         player.onGround = true;
+                         player.grav = 0;
+                    }    
+                    
+                    
+                    //from bottom
+                    if(pgrav < 0 && py > this.y + this.h/2) {
+                        player.grav = 1;   
+                        player.y = this.y + this.h;
+                    }  
+                    
+                    
+                }
+                
+                
+               if(py + ph> this.y + this.h/5 &&
+                py < this.y + this.h - this.h/5) 
+                {
+                    //from left
+                    if(pvel > 0 && px < this.x + this.w/2) {
+                        player.vel = 0;
+                    }
+                    
+                    //from right
+                    if(pvel < 0 && px >this.x + this.w/2) {
+                        player.vel = 0;
+                    }    
+                }
+            }
+            
+      
+};    
+
+Block.prototype.run = function() {
+    this.draw();
+    this.collide(player1[0]);
+    this.collide(player1[1]);
+    for (var i = 0; i < enemies.length; i ++) {
+	this.collide(enemies[i]);
+}
+
+};    
+
+Block.new = function(x, y, w, h, t) {
+    var b;
+    if (Block.freed.length > 0) {
+        b = Block.freed.pop();
+        b.init(x, y, w, h, t);
+    } else {
+        b = new Block(x, y, w, h, t);
+    }
+    return b;
+};  
+
+
+
+
+
+var physicBlock = function(x, y, w, h, t) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.t = t;
+    this.portalOpen = false;
+    this.portalDoorW = this.w;
+    this.fireRate= 0;
+    
+};   
+
+physicBlock.freed = [];
+
+physicBlock.prototype.draw = function() {
+     if(this.t === 'ladder') {
+            noStroke();
+            fill(87, 83, 0);
+            rect(this.x + this.w/10, this.y, this.w/10, this.h);
+            fill(87, 83, 0);
+            rect(this.x +this.w -  this.w/10 - this.w/10, this.y, this.w/10, this.h);
+            
+            rect(this.x + this.w/10, this.y + this.h/5, this.w - this.w/10 - this.w/10, this.h/10);
+            rect(this.x + this.w/10, this.y + this.h/5+this.h/5, this.w - this.w/10 - this.w/10, this.h/10);
+            rect(this.x + this.w/10, this.y + this.h/5+this.h/5+this.h/5, this.w - this.w/10 - this.w/10, this.h/10);
+            rect(this.x + this.w/10, this.y + this.h/5+this.h/5+this.h/5+this.h/5, this.w - this.w/10 - this.w/10, this.h/10);
+            rect(this.x + this.w/10, this.y +this.h/5+this.h/5+this.h/5+this.h/5 + this.h/5, this.w - this.w/10 - this.w/10, this.h/10);
+            
+            if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)) {
+                player1[0].vel = constrain(player1[0].vel, -2, 2);
+                player1[0].grav = constrain(player1[0].grav, -3, 3);
+                
+                player1[0].onGround = true;
+                player1[0].direction = 'ladder';
+            }    
+            if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h)) {
+                player1[1].vel = constrain(player1[1].vel, -2, 2);
+                player1[1].grav = constrain(player1[1].grav, -3, 3);
+                player1[1].onGround = true;
+                player1[1].direction = 'ladder';
+            }    
+            
+            for(var i in enemies) {
+                
+                var px = enemies[i].x;
+        var py = enemies[i].y;
+        var pw = enemies[i].w;
+        var ph = enemies[i].h;
+        var pvel = enemies[i].vel;
+        var  pOnGround = enemies[i].onGround;
+        var pgrav = enemies[i].grav;
+          //player 1
+         if( py+ ph + pgrav> this.y &&py + pgrav<this.y+this.h &&px+pw +pvel> this.x &&px +pvel < this.x+this.w){
+                    
+                    if(px + pw> this.x + this.w/5 &&px < this.x + this.w - this.w/5) 
+                    {
+                        //from the top
+                        
+                        if(pgrav > 0 && py + ph < this.y + this.h/2) {
+                             enemies[i].onGround = true;
+                             enemies[i].grav = 0;
+                        }    
+                        
+                        
+                        //from bottom
+                        if(pgrav < 0 && py > this.y + this.h/2) {
+                           enemies[i].grav = 1;   
+                            enemies[i].y = this.y + this.h;
+                        }  
+                        
+                        
+                    }
+                    
+                    
+                  
+                }  
+                    
+        }    
+               
+     } 
+     else if(this.t === 'portal') {
+         
+         
+         
+        fill(sin(frameCount*20)*40, cos(frameCount*50)*200, sin(frameCount*10)*200+120);
+        rect(this.x, this.y, this.w, this.h, this.w);
+         
+         
+        if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h) )  {
+            
+            
+            level ++;
+             blocks = [];
+             enemies = [];
+             sprites = [];
+            drawLevel();
+            resetPlayer1();
+            resetPlayer2();
+           p2Wins ++;
+            
+        }    
+        if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)) {
+        
+            level ++;
+             blocks = [];
+             sprites = [];
+            drawLevel();
+            enemies = [];
+            resetPlayer1();
+            resetPlayer2();
+            p1Wins ++;
+        } 
+     
+    }
+     else if(this.t === 'leftWater') {
+        
+       
+           
+            fill(0, 0, random(255, 200), 200);
+            rect(this.x, this.y, this.w, this.h);
+            if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)) {
+                 player1[0].vel = constrain(player1[0].vel, -10, 3);  
+                 if(!keys[RIGHT]) {
+                     
+                    player1[0].vel -= 0.4;   
+                 } 
+                 player1[0].onGround = true;
+                 player1[0].grav = constrain(player1[0].grav,-3, 3);
+            }    
+            if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h)) {
+                 player1[1].vel = constrain(player1[1].vel, -10, 3);  
+                 if(!keys[68]) {
+                     
+                    player1[1].vel -= 0.4;   
+                 } 
+                 player1[1].onGround = true;
+                 player1[1].grav = constrain(player1[1].grav,-3, 3);
+            } 
+           
+     } 
+     else if(this.t === 'rightWater') {
+        
+       
+           
+            fill(0, 0, random(255, 200), 200);
+            rect(this.x, this.y, this.w, this.h);
+            if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)) {
+                 player1[0].vel = constrain(player1[0].vel, -3, 10);  
+                 if(!keys[LEFT]) {
+                     
+                    player1[0].vel += 0.4;   
+                 } 
+                 player1[0].onGround = true;
+                 player1[0].grav = constrain(player1[0].grav, -3, 3);
+            }    
+            if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h)) {
+                 player1[1].vel = constrain(player1[1].vel, -3, 10);  
+                 if(!keys[65]) {
+                     
+                    player1[1].vel += 0.4;   
+                 } 
+                 player1[1].onGround = true;
+                 player1[1].grav = constrain(player1[1].grav, -3, 3);
+            } 
+           
+     } 
+      else if(this.t === 'downWater') {
+        
+       
+           
+            fill(0, 0, random(255, 200), 200);
+            rect(this.x, this.y, this.w, this.h);
+            if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)) {
+                 player1[0].grav = constrain(player1[0].grav, -2, 10);        
+                 player1[0].vel = constrain(player1[0].vel, -3, 3);
+                 player1[0].onGround = true;
+                 if(!keys[UP]) {
+                     
+                    player1[0].grav += 0.6;   
+                 } 
+            }    
+            if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h)) {
+                 player1[1].grav = constrain(player1[1].grav, -2, 10);  
+                 player1[1].vel = constrain(player1[1].vel, -3, 3);
+                 player1[1].onGround = true;
+                 if(!keys[87]) {
+                     
+                    player1[1].grav += 0.6;   
+                    
+                 } 
+            } 
+           
+     } 
+    
+    
+};
+
+physicBlock.prototype.run = function() {
+    this.draw();  
+};    
+
+physicBlock.new = function(x, y, w, h, t) {
+    var pb;
+    if (physicBlock.freed.length > 0) {
+        pb = physicBlock.freed.pop();
+        pb.init(x, y, w, h, t);
+    } else {
+        pb = new physicBlock(x, y, w, h, t);
+    }
+    return pb;
+}; 
+
+var deathBlock = function(x, y, w, h, t) {
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.t = t;
+};   
+
+deathBlock.freed = [];
+
+deathBlock.prototype.draw = function() {
+     if(this.t === 'fire') {
+            fill(255, 0, 0);
+            
+            triangle(this.x, this.y + this.h, this.x + this.w/2, cos(frameCount*50)*5+this.y, this.x + this.w, this.y +this.h);
+            
+            fill(255, 153, 0);
+            
+            triangle(this.x + this.w/10, this.y + this.h, this.x + this.w/2, cos(frameCount*50)*5+this.y+this.h/10, this.x + this.w - this.w/10, this.y +this.h);
+            
+            fill(255, 242, 0);
+            
+            triangle(this.x + this.w/10+this.w/4, this.y + this.h, this.x + this.w/2, cos(frameCount*50)*5+this.y+this.h/3, this.x + this.w - this.w/10-this.w/4, this.y +this.h);
+            
+             
+               
+     } 
+      if(checkIn(player1[0].x, player1[0].y, player1[0].w, player1[0].h, this.x, this.y, this.w, this.h)) {
+                player1[0].health -=10;
+            }    
+            if(checkIn(player1[1].x, player1[1].y, player1[1].w, player1[1].h, this.x, this.y, this.w, this.h)) {
+               player1[1].health -=10;
+        }  
+        for(var i in enemies) {
+        if(checkIn(enemies[0].x, enemies[0].y, enemies[0].w, enemies[0].h, this.x, this.y, this.w, this.h)) {
+                enemies[0].health -=10;
+            }    
+        }    
+};
+
+deathBlock.prototype.run = function() {
+    this.draw();  
+};    
+deathBlock.new = function(x, y, w, h, t) {
+    var db;
+    if (deathBlock.freed.length > 0) {
+        db = deathBlock.freed.pop();
+        db.init(x, y, w, h, t);
+    } else {
+        db = new deathBlock(x, y, w, h, t);
+    }
+    return db;
+}; 
+
+
+
+
+var Sprite = function(x, y, w, h, t) {
+    this.x = x;
+    this.y = y;
+    this.h = h;
+    this.w = w;
+    this.t = t;
+    
+};    
+
+Sprite.freed = [];
+Sprite.images = {};
+
+Sprite.prototype.draw = function() {
+ if (Sprite.images[this.t] === undefined) {
+    if(this.t === 'stone') {
+           noStroke();
+        fill(145, 145, 145);
+        rect(this.x, this.y, this.w, this.h);
+        fill(100, 100, 100);
+        ellipse(this.x + this.w/3, this.y + this.h/5, this.w/3, this.h/4);
+        ellipse(this.x + this.w/1.6, this.y + this.h/2.5, this.w/2, this.h/5);
+        arc(this.x, this.y + this.h/1.5, this.w/4, this.h/5, 270, 450);
+        arc(this.x+this.w, this.y + this.h/1.5, this.w/2, this.h/5, 90, 270);
+        
+        arc(this.x + this.w/1.5, this.y, this.w/3, this.h/2, 0, 180);
+                arc(this.x + this.w/1.5, this.y+this.h, this.w/3, this.h/3, 180, 360);
+                ellipse(this.x + this.w/2.5, this.y+this.h/1.4, this.w/1.5, this.h/5);
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);
+        
+    } else if(this.t === 'dirt') {
+        fill(122, 98, 0);
+        rect(this.x, this.y, this.w, this.h);
+         fill(100, 100, 100);
+        ellipse(this.x + this.w/3, this.y + this.h/5, this.w/3, this.h/4);
+        ellipse(this.x + this.w/1.6, this.y + this.h/2.5, this.w/2, this.h/5);
+        arc(this.x, this.y + this.h/1.5, this.w/4, this.h/5, 270, 450);
+        arc(this.x+this.w, this.y + this.h/1.5, this.w/2, this.h/5, 90, 270);
+        
+        arc(this.x + this.w/1.5, this.y, this.w/3, this.h/2, 0, 180);
+                arc(this.x + this.w/1.5, this.y+this.h, this.w/3, this.h/3, 180, 360);
+                ellipse(this.x + this.w/2.5, this.y+this.h/1.4, this.w/1.5, this.h/5);
+                
+             fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);    
+    }    
+    else if(this.t === 'grass') {
+        fill(122, 98, 0);
+        rect(this.x, this.y, this.w, this.h);
+        fill(0, 148, 47);
+        triangle(this.x, this.y, this.x, this.y + this.h/4, this.x + this.w/3, this.y);
+        triangle(this.x + this.w/10, this.y, this.x + this.w/4, this.y + this.h/3, this.x + this.w/2, this.y);
+        triangle(this.x + this.w/3, this.y, this.x + this.w/1.5, this.y, this.x + this.w / 1.8, this.y + this.h/3.5);
+        triangle(this.x + this.w, this.y, this.x + this.w, this.y + this.h/3, this.x + this.w/2, this.y);
+        
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);
+    }    else if(this.t === 'bark'){
+        noStroke();
+        fill(115, 88, 0);
+        rect(this.x, this.y, this.w, this.h);
+        
+         fill(99, 69, 0);
+        quad(this.x, this.y, this.x, this.y + this.h/2, this.x + this.w/10, this.y + this.h/2,this.x + this.w/4, this.y);
+        quad( this.x+this.w/10, this.y + this.h/2, this.x, this.y + this.h/2, this.x + this.w/10, this.y + this.h, this.x + this.w/3, this.y + this.h);
+        triangle(this.x + this.w/2, this.y + this.h, this.x + this.w/3, this.y + this.h/1.5, this.x + this.w/2.5, this.y );
+        quad(this.x + this.w, this.y, this.x + this.w - this.w/10, this.y, this.x + this.w/1.5, this.y + this.h, this.x + this.w - this.w/10, this.y + this.h);
+        triangle(this.x + this.w/2, this.y, this.x + this.w/1.3, this.y, this.x + this.w/1.5, this.y + this.h/1.5);
+    
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);    
+    }    else if(this.t === 'leaf') {
+        noStroke();
+         fill(0, 97, 11);
+         rect(this.x, this.y, this.w, this.h);
+        fill(33, 122, 0);
+        rect(this.x, this.y, this.w/2, this.h, this.w);
+        ellipse(this.x + this.w/2, this.y + this.h/3, this.w/3, this.h/1.5);
+        ellipse(this.x + this.w - this.w/5, this.y + this.h- this.h/4, this.w/5, this.h / 2);
+        
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);
+       
+    }     else if(this.t === 'brick') {
+       
+        fill(71, 71, 71);
+        rect(this.x, this.y, this.w, this.h);
+        fill(176, 135, 0);
+        rect(this.x, this.y, this.w/2 - this.w/10, this.h/3 - this.h/10);
+        fill(89, 83, 0);
+        rect(this.x+this.w/2, this.y, this.w/2 - this.w/10, this.h/3  - this.h/10);
+        
+        fill(130, 98, 0);
+        rect(this.x, this.y + this.h/3, (this.w/2 - this.w/10)/2, this.h/3 - this.h/10);
+        rect(this.x + this.w - (this.w/2 - this.w/10)/2, this.y + this.h/3, (this.w/2 - this.w/10)/2, this.h/3 - this.h/10);
+        
+        fill(145, 131, 0);
+        rect(this.x + this.w/2 - this.w/10 - this.w/10, this.y + this.h/3, this.w/2 - this.w/10, this.h/3 - this.h/10);
+        
+  
+        fill(130, 113, 0);
+        rect(this.x, this.y+this.h- this.h/2+this.h/10+this.h/10, this.w/2 - this.w/10, this.h/3 - this.h/10);
+        fill(189, 158, 0);
+        rect(this.x+this.w/2, this.y+this.h- this.h/2+this.h/10+this.h/10, this.w/2 - this.w/10, this.h/3  - this.h/10);
+        
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);
+    } else if(this.t === 'wood') {
+        
+        noStroke();
+        fill(115, 88, 0);
+        rect(this.x, this.y, this.w, this.h);
+        
+         fill(99, 69, 0);
+        triangle(this.x, this.y,  this.x + this.w, this.y, this.x, this.y + this.h/4);
+        quad(this.x, this.y + this.h, this.x + this.w, this.y + this.h, this.x + this.w/1.5, this.y + this.h/1.5, this.x + this.w/2, this.y + this.h - this.h/10);
+        triangle(this.x+this.w/10, this.y + this.h/2, this.x + this.w, this.y + this.h/3, this.x + this.w/2, this.y + this.h/1.5);
+        triangle(this.x, this.y + this.h, this.x + this.w/5, this.y + this.h, this.x, this.y+this.h-this.h/3);
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);
+    }    
+    else if(this.t === 'bars') {
+        noStroke();
+        fill(107, 107, 107);
+        pushMatrix();
+        translate(this.x, this.y);
+        for(var i = 0; i < this.w; i += this.w/4) {
+            rect(i, 0, this.w/10, this.h);   
+        }    
+        popMatrix();
+         fill(0, 0, 0, 100);
+        rect(this.x, this.y, this.w, this.h);
+    }    
+    Sprite.images[this.t ] = get(this.x, this.y, this.w, this.h);
+        
+       }
+    else {
+        image (Sprite.images[this.t], this.x, this.y, this.w, this.h);
+    }    
+};
+
+Sprite.new = function(x, y, w, h, t) {
+    var s;
+    if (Sprite.freed.length > 0) {
+        s = Sprite.freed.pop();
+        s.init(x, y, w, h, t);
+    } else {
+        s = new Sprite(x, y, w, h, t);
+    }
+    return s;
+}; 
+Sprite.prototype.run = function() {
+    this.draw();  
+};    
+
+
+drawLevel = function() {
+    for(var i = 0; i < levels[level].length; i ++) {
+          for(var j = 0; j < levels[level][i].length; j ++) {
+        
+            switch(levels[level][i][j]) {
+                
+                
+                case '1':
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                    
+                    
+                break;
+                
+                case '2':
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                    
+                break;
+                
+                
+                 case 's':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'stone'));
+                    
+                break;  
+                 case 'd':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'dirt'));
+                break;  
+                 case 'g':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'grass'));
+                break;  
+                
+                case 'b':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bark'));
+                   
+                    
+                break;  
+                
+                case 'l':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'leaf'));
+                break;  
+                case 'B':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'brick'));
+                break; 
+                case '|':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bars'));
+                break; 
+                case 'w':
+                    
+                    this.blocks.push(Block.new(j * blockSize, i * blockSize, blockSize, blockSize, 'wood'));
+                break; 
+                
+                case 'L':
+                    this.blocks.push(physicBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'ladder'));
+                    
+                break;    
+                case 'f':
+                    this.blocks.push(deathBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'fire'));
+                    
+                break;  
+                case 'p':
+                    this.blocks.push(physicBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'portal'));
+                    
+                break; 
+                 case '<':
+                    this.blocks.push(physicBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'leftWater'));
+                    
+                break;   
+                 case '>':
+                    this.blocks.push(physicBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'rightWater'));
+                    
+                break;    
+                 case 'v':
+                    this.blocks.push(physicBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'downWater'));
+                    
+                break;    
+                 case '^':
+                    this.blocks.push(physicBlock.new(j*blockSize, i*blockSize, blockSize, blockSize, 'upWater'));
+                    
+                break;    
+                
+                case 'e':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                break;    
+                
+                
+                
+                case 'S':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'stone'));
+                    
+                break;  
+                 case 'D':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'dirt'));
+                break;  
+                 case 'G':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'grass'));
+                break;  
+                
+                case '[':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bark'));
+                   
+                    
+                break;  
+                
+                case '0':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'leaf'));
+                break;  
+                case ']':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'brick'));
+                break; 
+                case '/':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bars'));
+                break; 
+                case 'W':
+                    
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'wood'));
+                break; 
+               
+    
+                case '(':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'stone'));
+                    
+                break;  
+                 case '*':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'dirt'));
+                break;  
+                 case '&':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'grass'));
+                break;  
+                
+                case '^':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bark'));
+                   
+                    
+                break;  
+                
+                case '%':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'leaf'));
+                break;  
+                case '$':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'brick'));
+                break; 
+                case '#':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bars'));
+                break; 
+                case '@':
+                    this.enemies.push(Enemy.new(j * blockSize, i * blockSize, blockSize-blockSize/10,  blockSize*2-blockSize/10-blockSize/10));
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'wood'));
+                break; 
+                
+                case '3':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'wood'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;    
+                case '4':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bars'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case '5':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bricks'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case '6':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'leaf'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case '7':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bark'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case '8':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'grass'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case '9':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'dirt'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case 'c':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'stone'));
+                    p1SpawnX = j * blockSize;
+                    p1SpawnY = i * blockSize;
+                    player1[0].x = p1SpawnX;
+                    player1[0].y = p1SpawnY;
+                break;  
+                case '~':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'wood'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break;  
+                case '`':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bars'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+                case '=':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bricks'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+                case '+':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'leaf'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+                
+                case 'm':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'bark'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+                case 'M':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'grass'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+                case 'n':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'dirt'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+                case 'N':
+                    this.sprites.push(Sprite.new(j * blockSize, i * blockSize, blockSize, blockSize, 'stone'));
+                    p2SpawnX = j * blockSize;
+                    p2SpawnY = i * blockSize;
+                    player1[1].x = p2SpawnX;
+                    player1[1].y = p2SpawnY;
+                break; 
+            }
+        
+        }    
+        
+    }    
+    
+};
+
+ drawLevel();
+
+var playerKills = function() {
+   
+    //jumps{
+    
+        //player 1  kills player 2
+        if(player1[0].x +player1[0].w> player1[1].x && player1[0].x < player1[1].x + player1[1].w && player1[0].y +player1[0].h> player1[1].y-player1[1].h/10 && player1[0].y +player1[0].h< player1[1].y + player1[1].h/20 && player1[0].grav > player1[1].grav && player1[0].grav > 1) {
+               resetPlayer2();
+               player1[0].grav = -30;
+               
+               
+        }    
+        
+        //player2 kills player 1
+       if(player1[1].x +player1[1].w> player1[0].x && player1[1].x < player1[0].x + player1[0].w && player1[1].y +player1[1].h> player1[0].y -player1[0].h/10&& player1[1].y +player1[1].h< player1[0].y + player1[0].h/20 && player1[1].grav > player1[0].grav && player1[1].grav > 1) {
+               resetPlayer1();
+               player1[1].grav = -30;
+               
+               
+        }   
+    
+    //}
+
+    //sword{
+    
+        if(player1[0].direction === 'left' && keys[DOWN]) {
+               if(player1[0].x - player1[0].w > player1[1].x && player1[0].x<player1[1].x + player1[1].w + player1[1].w && player1[0].y < player1[1].y + player1[1].h && player1[0].y + player1[0].h > player1[1].y) {
+                   player1[1].health -= 5;
+                   
+               } 
+              
+            
+        }  else if(player1[0].direction === 'right' && keys[DOWN]) {
+             if(player1[0].x+ player1[0].w> player1[1].x - player1[1].w && player1[0].x< player1[1].x && player1[0].y < player1[1].y + player1[1].h && player1[0].y + player1[0].h > player1[1].y) {
+            player1[1].health -= 5;
+             }
+             
+        }    
+        
+        
+         if(player1[1].direction === 'left' && keys[83]) {
+               if(player1[1].x - player1[1].w > player1[0].x && player1[1].x<player1[0].x + player1[0].w + player1[0].w && player1[1].y < player1[0].y + player1[0].h && player1[1].y + player1[1].h > player1[0].y) {
+                   player1[0].health -= 5;
+                   
+               } 
+            
+        }  else if(player1[1].direction === 'right' && keys[83]) {
+             if(player1[1].x+ player1[1].w> player1[0].x - player1[0].w && player1[1].x< player1[0].x && player1[1].y < player1[0].y + player1[0].h && player1[1].y + player1[1].h > player1[0].y) {
+            player1[0].health -= 5;
+             }
+        }  
+        
+       
+    
+    //}
+    if(player1[0].health <= 0) {
+        resetPlayer1();   
+    }    
+    if(player1[1].health <= 0) {
+        resetPlayer2();  
+    }     
+    
+};    
+
+//{
+
+var meBlockSize = 7.5;
+
+var homeButtonPage = 0;
+
+var homeButton = function(x, y, s) {
+      
+    if(dist(mouseX, mouseY, x, y) <= s/2) {
+        
+        homeButtonPage = 1;
+        if(click) {
+             drawLevel();
+             level = 1;
+            if(setting === 2) {
+            page = 'how';   
+            } else if(setting === 1) {
+                page = 'game';   
+            }    
+        }    
+    }    else {
+        homeButtonPage = 0;   
+    }    
+    
+    
+    var homeButtonArray = [
+        [
+        '      21111111      ',
+        '    222222111111    ',
+        '   32222222211111   ',
+        '  3332222222221111  ',
+        ' 333332222222222111 ',
+        ' 433333322222222211 ',
+        '44333333332222222221',
+        '4eff33f333efff2f22f1',
+        '5d43f3f333d32f2e22f2',
+        '5d44e3e333c33e3d22e2',
+        '5cddd4d333bcde33dd22',
+        '5c5444c333b33d33c322',
+        '5b5444b333a33d33b332',
+        '6a5544abc3a33c33a333',
+        ' 655544444333333333 ',
+        ' 665555444443333333 ',
+        '  6665554444444333  ',
+        '   66655554444444   ',
+        '    666655554444    ',
+        '      66655554      ',
+        
+        
+        ],
+        [
+            
+            
+        '      56666666      ',
+        '    555555666666    ',
+        '   45555555566666   ',
+        '  4445555555556666  ',
+        ' 344445555555555666 ',
+        ' 344444455555555566 ',
+        '43444444445555555556',
+        '4eff44f444efff5f55f6',
+        '3d44f4f444d44f5e55f5',
+        '3d44e4e444c44e4d55e5',
+        '2cddd4d444bcde44dd55',
+        '2c2344c444b44d44c455',
+        '2b2334b444a44d44b445',
+        '1a2233abc4a44c44a444',
+        ' 133333333444444444 ',
+        ' 113333333333444444 ',
+        '  1113333333333344  ',
+        '   111333333333333  ',
+        '    111133333333    ',
+        '      11122223      ',
+        
+        
+        ],
+            
+        
+        
+    
+    
+    ]; 
+    
+    for(var i =0; i < homeButtonArray[homeButtonPage].length; i ++) {
+        
+        for(var j = 0;  j < homeButtonArray[homeButtonPage][i].length ; j ++) {
+            noStroke();
+            pushMatrix();
+            translate(x-s/2, y-s/2);
+            
+            switch(homeButtonArray[homeButtonPage][i][j]) {
+                
+                case '1':
+                    fill(181, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;
+                case '2':
+                    fill(148, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;
+                case '3':
+                    fill(117, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;
+                case '4':
+                    fill(92, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;
+                case '5':
+                    fill(71, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;
+                case '6':
+                    fill(51, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;
+                case 'a':
+                    fill(125, 125, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;     
+                case 'b':
+                    fill(115, 115, 0);
+                   rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;    
+                case 'c':
+                    fill(140, 140, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;  
+                case 'd':
+                    fill(158, 158, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;  
+                case 'e':
+                    fill(179, 179, 0);
+                    rect(j*meBlockSize, i*meBlockSize, meBlockSize, meBlockSize);
+                break;  
+                    case 'f':
+                    fill(201, 201, 0);
+                   rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;   
+                
+                
+                    
+                    
+            }    
+            
+            popMatrix();
+            
+        }    
+    }
+      
+     
+};    
+
+
+ 
+var homeArray = [
+    
+  
+  
+'                                                                                ',
+'                                                                                ',
+'  555555    555555    5      5   55555     555    55555555                      ',
+' 44444455   4444455  445    445  44  55   44445   3  34  4                      ',
+' 34    4   34    45  3434  3434  34  45  34   34     23                         ',
+' 34        34    34  34 3434 34  34333   34   34     62                         ',
+' 23        23    23  23  23  23  26222   2333223     62                         ',
+' 62    3   62    62  62  62  62  62  34  6666662     16                         ',
+' 16555245  16555165  16  16  16  16  23 16     16    16      RRr                ',
+'  162344    162344   162 16 162  11264  162   162   6113    RrrRr               ',
+'                                                            rRrRR               ',
+'                                                            bb Rr               ',
+'                                                           5555rr               ',
+' gg                                                       334455R               ',
+' Ggg                                                     22344455               ',
+' GGgg                                                    22233455r              ',
+'  GGgg.//RRRR  RRR         R                            333333445r              ',
+'   GGggr..//RR /R         //R     ..//RR  RRR  /RR       eses3445R              ',
+'    GGgg    /R /R        // /R    r.r./R  /R    /R      322333345               ',
+'     GGgg      ./        /   R    r.   R  /R    //       11223344               ',
+'    r GGgg     ./       ..   /R   r.      //    ./       11122233               ',
+'    r. GGgg    r.       ./   /R   rr./RR  ./RRR/./       111123444   ggggggg    ',
+'    r.  GGgg   r/  /RR  r/./r/R       /R  rr..//..         SSssss  ggggGGGGGggg ',
+'    r./  GGgRR rr   /R  r.   //   /   .R  ./    .r55555 555555544gggGGG0B0B0BGgg',
+'     r...////R rr.////  r.   r//  ..././  r.    rr444435555555443gg0B0B0B0B0B0Gg',
+'      rrrrrr/gg rr../  rr.   r./  rrr../  r./  .rr433325554444433gg0B0B0B0B0B0BG',
+'            GGgg                                54322225544444433gg0B0B0B0B0B0BG',
+'             GGgg                                R1111b5544444332gg0B0B0B0B0B0B0',
+'              GGgg                               R/.rbb5544333332gg0B0B0B0B0B0B0',
+'               GGgg                             RR/.rbb5543333322gg0B0B0B0B0B0B0',
+'                GGgg                            R/.rbbb5543332222gg0B0B0B0B0B0B0',
+'                 GGgg                          RR/.rbb  532222222gg0B0B0B0B0B0B0',
+'                  GGgg                         R/.rbb   432222222gg0B0B0B0B0B0B0',
+'                   GGgg   bb                  RR/.rb    432226666gg0B0B0B0B0B0B0',
+'                    GGgg   bb                 R/.rb     422266666gg0B0B0B0B0B0B0',
+'                     GGgggbb  45555RRRRRR1245RR/.rb     422666666gg0B0B0B0B0B0B0',
+'                      GG34441234444rrrrrrr1245R/.r      326666661gg0B0B0B0B0B0B0',
+'                       G3gb23123333bbbbbbb12345.r       266666661gg0B0B0B0B0B0B0',
+'                     b bbb122312222bbbbbbbb12345r        66666611gg0B0B0B0B0B0B0',
+'                     bbb  112231111         2344         66666111gg0B0B0B0B0B0B0',
+'                      b    1122                          66661111gg0B0B0B0B0B0B0',
+'                            11bb                         66111111gg0B0B0B0B0B0B0',
+'                             bbb                         611111111ggB0B0B0B0B0B0',
+'                                                         111111000ggB0B0B0B0B0B0',
+'                                                          00bb0000ggB0B0B0B0B0B0',
+'                                                          0bbbbBBBggB0B0B0B0B0B0',
+'                                                          BBbbBB//ggB0B0B0B0B0B0',
+'                                                          RR////rrggB0B0B0B0B0B0',
+'                                                          RR///RRrGgB0B0B0B0B0B0',
+'                                                         RR///.RRrGgB0B0B0B0B0B0',
+'                                                         RR///.RRrGgB0B0B0B0B0B0',
+'                                                        RR///..rRRGgB0B0B0B0B0B0',
+'                                                        RR///..rRRGgB0B0B0B0B0B0',
+'                                                       RR///..rrrRGGg0B0B0B0B0B0',
+'                                                       RR///..rrrRRGg0B0B0B0B0B0',
+'                                                      RR//..rrrr  RGg0B0B0B0B0B0',
+'                                                      R///..rr    RGg0B0B0B0B0B0',
+'                                                     RR///..rr     Gg0B0B0B0B0B0',
+'                                                     RR//..rr      GGgB0B0B0B0Bg',
+'                                                    RR//..rr        GgB0B0B0B0Bg',
+'                                                    RR//..rr        GgB0B0B0B0Bg',
+'                                                   RR//..rr         GGg0B0B0B0Bg',
+'                                                   RR/..rr           Gg0B0B0B0gR',
+'                                                  44455rr            GGgB0B0B0gR',
+'                                                  333455r             GGggB0BgG/',
+'                                                  2222345               GGGgggG5',
+'                                                  6223455                GGGGG45',
+'                                                  1622345                 166234',
+'                                                  1622345                 166234',
+'                                                  16223455                 16623',
+'                                                   1622345                  1623',
+'                                                   1622345                   162',
+'                                                   16223455                   16',
+'                                                    1622345                    1',
+'                                                    1622345                     ',
+'                                                    1622345                     ',
+'                                                    16223455                    ',
+'                                                     1622345                    ',
+'                                                      162345                    ',
+'                                                      162345                    ',
+    
+    
+    
+  
+    
+];
+var drawHomeMap = function() {
+    for(var i = 0; i < homeArray.length; i ++) {
+        for(var j = 0; j < homeArray[i].length; j ++) {
+            var meId = homeArray[i][j];
+              noStroke();
+            switch(meId) {
+                case '6':
+                    fill(125, 125, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;     
+                case '1':
+                    fill(115, 115, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;    
+                case '2':
+                    fill(140, 140, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;  
+                case '3':
+                    fill(158, 158, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;  
+                case '4':
+                    fill(179, 179, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break;  
+                    case '5':
+                    fill(201, 201, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                 case 'e':
+                    fill(255, 255, 255);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                   fill(0, 0, 0);
+                    rect(j*meBlockSize, i*meBlockSize+meBlockSize/4, meBlockSize/3, meBlockSize/3);
+                break; 
+                    case 'b':
+                        fill(0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                case 'w':
+                        fill(255, 255, 255);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                
+                    case 'R':
+                    fill(161, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                case '/':
+                    fill(120, 0, 0);
+                   rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                 case '.':
+                    fill(97, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+              
+                    case 'r':
+                    fill(77, 0, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                    case 's':
+                    fill(199, 189, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                case 'S':
+                    fill(181, 169, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+               case 'g':
+                    fill(135, 135, 135);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                case 'G':
+                    fill(99, 99, 99);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                  break;
+                case 'B':
+                    fill(84, 73, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+                case '0':
+                    fill(140, 121, 0);
+                    rect(j*meBlockSize, i * meBlockSize, meBlockSize+1, meBlockSize+1);
+                break; 
+            }    
+           
+       
+        }    
+    } 
+};
+
+var home = function() {
+    
+
+    
+    background(0, 125, 150);
+     for(var i = 0; i < width; i += 20) {
+        for(var j = 0; j < height; j += 20) {
+            fill(0, 0, random(120, 100));
+            rect(i, j, 20, 20);
+        }    
+    } 
+    drawHomeMap();
+    homeButton(100, 430, 150);
+    
+   //setting button{
+    textFont(createFont('impact'));
+    textSize(25);
+    
+    stroke(170, 170, 0);
+    noFill();
+    strokeWeight(cos(frameCount*50)*2+5);
+    ellipse(260, 435, 120, 120);
+    noStroke();
+    if(dist(mouseX, mouseY, 260, 435) <= 60) {
+        if(click) {
+            if(setting === 1) {
+                setting = 2;   
+            }    else if(setting === 2) {
+                setting = 1;   
+            }    
+        }    
+        
+        
+        if(mouseIsPressed) {
+            fill(170, 170, 0);
+        }   else {
+            fill(179, 179, 179);   
+        }    
+    }   else {
+    fill(140, 0, 0);
+    }
+    textAlign(CENTER, CENTER);
+    text("setting:", 260, 420);
+    if(setting === 1) {
+        text("1 player", 260, 450);   
+    }    else if(setting === 2) {
+        text("2 player", 260, 450);   
+    }    
+  //} 
+   
+};    
+//}home stuff
+
+var how = function() {
+    
+    noStroke();
+     for(var i = 0; i < width; i += 20) {
+        for(var j = 0; j < height; j += 20) {
+            fill(0, 0, random(25, 40));
+            rect(i, j, 20, 20);
+        }    
+    } 
+    fill(255, 255, 255);
+    textAlign(CENTER, TOP);
+    textSize(40);
+    textFont(createFont('monospace'));
+    text('H O W   T O   P L A Y', 300, 20);
+    
+    textSize(30);
+     textAlign(CENTER, CENTER);
+    text('player 1', 150, 150);
+    text('player 2', 450, 150);
+    
+     textAlign(LEFT, TOP);
+     textSize(20);
+     text('color: red\n\nmovement: arrow keys\n\nsword: down key', 50, 200);
+     textSize(20);
+     text('color: blue\n\nmovement: wasd\n\nsword: s key', 350, 200);
+     text("To kill your enemy, jump on his head or use\nyour sword. (you need to be going either left\nor right to use your sword)", 50, 380);
+     text("THE GOAL OF THE GAME IS TO BEAT\nYOUR ENEMY TO THE PORTAL!", 50, 480);
+     text("note: the water has a current;\n you often need to swim against it.", 50, 540);
+     
+     
+     
+     stroke(255, 255, 255);
+     strokeWeight(3);
+     line(300, 150, 300, 320);
+     line(20, 350, 580, 350);
+    
+    button(450, 500, 130, 40, 'play', 'game');
+    
+    
+};    
+
+var game = function() {
+    switch(gamePage) {
+        case 'platformer':
+        background(13, 3, 148);
+       
+       
+       //Block.collide();
+        //moon
+        for(var w = 1; w < 150; w +=1) {
+            fill(196, 196, 196, 6);
+            ellipse(450, 100, w, w); 
+            fill(196, 196, 196);
+            ellipse(450, 100, 85, 85);
+           
+            
+            
+        }  
+        
+      
+        
+        runObject(blocks);
+       
+       runObject(sprites);
+       runObject(enemies);
+       
+        if(setting=== 1) {
+            player1[0].draw();
+        
+        } else if(setting === 2) {
+        
+            player1[0].draw();
+            player1[1].draw();
+        }
+         
+        playerKills();
+        
+        //player resets
+        if(keyCode === 82) {
+            resetPlayer2();   
+        }    
+        if(keyCode === 16) {
+            resetPlayer1();   
+        }    
+       
+        //println(this.__frameRate);
+      textSize(20);
+      textFont(createFont('monospace'));
+      fill(255, 255, 255);
+      textAlign(LEFT, TOP);
+      text('level: '+level, 10, 10);
+      textAlign(CENTER, TOP);
+      text(levelName[level], 300, 10);
+      
+      if(level >9 && setting === 2) {
+        page = 'win';   
+      } else if(level >8 && setting === 1) {
+        page = 'win';   
+      } 
+      break;
+      
+    }
+  
+};
+
+var win = function() {
+    for(var i = 0; i < width; i += 10) {
+        for(var j = 0; j < height; j += 10) {
+            fill(125, 125, 255);
+            stroke(150, 0, 0);
+            strokeWeight(2);
+            rect(i, j, 11, 11);   
+        }    
+    }    
+    if(setting === 2) {
+    Text(20, 100, 1.9, "CONGRATULATIONS");
+    if(p1Wins > p2Wins) {
+        Text(20, 180, 2.7, "PLAYER ONE!");
+        Text(20, 250, 0.85, "You beat player two to the portal");
+    }   else if(p2Wins > p1Wins) {
+        Text(20, 180, 2.7, "PLAYER TWO!");
+        Text(20, 250, 0.85, "You beat player one to the portal");
+       
+    } 
+        Text(160, 290, 0.85,  "most of the time!"); 
+    }  else {
+        Text(20, 100, 1.8, "CONGRATULATIONS!");
+        Text(20, 200, 1.5, "you beat all of the");
+        Text(20, 250, 1.4, "levels in one player");
+        Text(50, 300, 2, "COMABT CLASH!");
+        
+    }    
+    Text(20, 370, 1, "If you liked it, feel free to");
+    printlnButton(100, 400, 400, 40, "subscribe", 'https://www.khanacademy.org/computer-programming/sub-to/5792481952694272');
+    button(100, 450, 400, 100, 'home', 'home');
+    
+    level = 1;
+   
+};    
+
+frameRate(35);
+draw = function() {
+    
+   switch(page) {
+        case 'home':
+            home();
+        break;    
+        case 'how':
+            how();
+        break;
+        case 'game':
+            game();
+        break;   
+        case 'win':
+            win();
+        break;    
+            
+   } 
+   click = false;
+};
+
+
+mouseClicked = function() {
+    click = true;  
+};    
+
+keyPressed = function() {
+    keys[keyCode]=true;  
+};    
+
+keyReleased = function() {
+    keys[keyCode]=false;  
+};  
+
+
